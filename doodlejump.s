@@ -80,7 +80,7 @@ jal StartDrawOnePlatform          # start to draw TOP platform
 sw $t9 topPlatformLocation        # store location of top platform
 
 jal StartDrawDoodler              #  now we go to draw the doodler
-jal Exit
+jal BounceUpFromBottom  #TODO change!!!
 
 #MoveRow:
 # moves up address in $t2 up 10 squares(rows)
@@ -125,6 +125,8 @@ StartDrawDoodler:
 # doodler starts in the middle of the bottom platform
 lw, $t9, bottomPlatformLocation# t9 stores the address of bottom right corner of doodler
 addi $t9, $t9, -116            # move up 1 row -128, then move right +12(3 units)
+sw $t9, doodlerLocation        # store the location of doodler in memory
+DrawDoodler:
 lw $t7, doodlerColour          # $t7 stores the colour of the doodler
 # draw the doodler one square at a time
 sw $t7, 0($t9)                 # colour the bottom left leg
@@ -136,17 +138,76 @@ sw $t7, -248($t9)              # colour the left arm -- up 2 rows (-256), right 
 sw $t7, -380($t9)              # colour the head -- 3 rows up (-384), 1 right (+4)  
 jr $ra                         # jump out of function
 
-# condition if doodler hits a platform on the way down and bouncesto move platforma up
-# doodler could only reach bottom platform
 
-#jump
-# boounce up() -- doodler will not bounce
+
+BounceUpFromMiddle: 
+# bounces up and moves platforms 
+
+BounceUpFromBottom:
+# bounces up without moving platforms.
+# doodler can move up 15 squares
+addi $t3, $zero, 15    # doodler can move up 15 squares
+BounceUpFromBottomLoop: 
+beq $zero, $t3, Exit          # end loop once doodler moves up 15 squares
+j Sleep                 # sleeps for 1/4 sec
+TEMP1: #TODO Change j back to jal
+j MoveUpOne             # move doodler up 1 square
+TEMP2:
+#TODO add check for left or right -- beq ? 
+addi $t3, $t3, -1        # increment $t3
+j BounceUpFromBottomLoop # jump back to begining of loop
+
+
+MoveUpOne:
+# moves up doodler by 1 square/row
+lw $t9, doodlerLocation   # load the address of the bottom left square of the doodler
+jal EraseDoodler          # erase the previous position of doodler
+addi $t9, $t9, -128       # update the position of doodler up 1 row (-128)
+sw $t9, doodlerLocation   # store updated location of doodler
+jal DrawDoodler           # redraw the doodler in row above
+#TODO change later to stack
+j TEMP2
+
+EraseDoodler:
+# don't change colour if it's green (platform) otherwise change it back to sky colour
+# TODO: check that the colour of the square is purple -- for now  will temp just set everything to sky colour
+
+# $t9 holds the address of the bottom left square of the doodler
+lw $t8, platformColour # $t8 sotres the colour of the platforms
+lw $t7, skyColour      #t7 stores the colour of the sky
+
+# TODO;; maybe store the offsets in an array later so could loop over to populate 
+sw $t7, 0($t9)                 # colour the bottom left leg
+sw $t7, 8($t9)                 # colour the bottom right leg -- 2 right + 8
+sw $t7, -124($t9)              # colour the middle square -- 1 row up (-128) and 1 right (+4)
+sw $t7, -256($t9)              # colour the right arm -- up 2 rows (-256)
+sw $t7, -252($t9)              # colour the chest -- up 2 rows (-256), right 1 (+4)
+sw $t7, -248($t9)              # colour the left arm -- up 2 rows (-256), right 2 (+8)
+sw $t7, -380($t9)              # colour the head -- 3 rows up (-384), 1 right (+4)  
+jr $ra                         # jump out of function
+
+
+Sleep:
+# sleeps for 1/2 sec
+li $v0, 32  # command for sleep
+li $a0, 250 # sleep for 250 milliseconds
+syscall
+#jr $ra    # exit out of function
+j TEMP1
+
+
 # keep in mind side movement later
+
+# move side 
+# move left
+# move right
 
 #travel down() -- 
 #   if hit platform: bounce up ()
 # else: keep going down until hit bottom of screen
 
+# condition if doodler hits a platform on the way down and bouncesto move platforma up
+# doodler could only reach bottom platform
 
 Exit:
 li $v0, 10            # terminate the program gracefully
