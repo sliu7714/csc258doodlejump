@@ -125,22 +125,27 @@ StartDrawDoodler:
 # doodler starts in the middle of the bottom platform
 lw, $t9, bottomPlatformLocation# t9 stores the address of bottom right corner of doodler
 addi $t9, $t9, -116            # move up 1 row -128, then move right +12(3 units)
-addi $t8, $zero, 2             # $t8 stores the # of blocks being drawn (-1 since 0 is counted)
 lw $t7, doodlerColour          # $t7 stores the colour of the doodler
-DrawDoodler:
-blez $t8, EndDrawDoodler # branches once all squares of doodler are drawn
-
-#draw square first   TODO: change later
-sw $t7, 0($t9)                 # stores the doodler colour to corrispoinding address
-addi $t9, $t9, 4               # increment address by 1
-
-addi $t8, $t8, -1              # remove 1 from total blocks still needed to be drawn
-j DrawDoodler                  # go back to draw more squares
-EndDrawDoodler:
+# draw the doodler one square at a time
+sw $t7, 0($t9)                 # colour the bottom left leg
+sw $t7, 8($t9)                 # colour the bottom right leg -- 2 right + 8
+sw $t7, -124($t9)              # colour the middle square -- 1 row up (-128) and 1 right (+4)
+sw $t7, -256($t9)              # colour the right arm -- up 2 rows (-256)
+sw $t7, -252($t9)              # colour the chest -- up 2 rows (-256), right 1 (+4)
+sw $t7, -248($t9)              # colour the left arm -- up 2 rows (-256), right 2 (+8)
+sw $t7, -380($t9)              # colour the head -- 3 rows up (-384), 1 right (+4)  
 jr $ra                         # jump out of function
 
 # condition if doodler hits a platform on the way down and bouncesto move platforma up
 # doodler could only reach bottom platform
+
+#jump
+# boounce up() -- doodler will not bounce
+# keep in mind side movement later
+
+#travel down() -- 
+#   if hit platform: bounce up ()
+# else: keep going down until hit bottom of screen
 
 
 Exit:
