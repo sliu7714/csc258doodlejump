@@ -39,12 +39,33 @@ doodlerLocation:       .word 0     # location of the bottom left square of the d
 topPlatformLocation:   .word 0     # location of the leftmost square of the top platform
 midPlatformLocation:   .word 0     # location of the leftmost square of the middle platform
 bottomPlatformLocation:.word 0     # location of the leftmost square of the bottom platform
-	                          
+                         
+doodlerFigureArray:    .space 7    # array of size 7 with the displacements for drawing the different parts of the doodler
+
 
 .text
-lw $t0, displayAddress # $t0 stores the base address for display
+lw $t0, displayAddress         # $t0 stores the base address for display
 
-Main:
+# Initializes the doodlerFigureArray with the different displacements for the different parts of the doodler
+# order is left to right then bottom to up 
+la $t9, doodlerFigureArray    # $t9 stores the address of the first item in the array
+addi $t3, $zero, 0             # $t3 stores the displacement for one part
+sw $t3, doodlerFigureArray                 # bottom left leg
+addi $t3, $zero, 8 
+sw $t3, 4($t9)                 # bottom right leg -- 2 right + 8
+addi $t3, $zero, -124
+sw $t3, 8($t9)                 # middle square -- 1 row up (-128) and 1 right (+4)
+addi $t3, $zero, -256
+sw $t3, 12($t9)                # right arm -- up 2 rows (-256)
+addi $t3, $zero, -252
+sw $t3, 16($t9)                # chest -- up 2 rows (-256), right 1 (+4)
+addi $t3, $zero, -248
+sw $t3, 20($t9)                # left arm -- up 2 rows (-256), right 2 (+8)
+addi $t3, $zero, -380
+sw $t3, 24($t9)                # head -- 3 rows up (-384), 1 right (+$)
+#TODO: need to test thi
+
+Main: 
 
 StartDrawSky:
 addi $t9, $t0, 0    # $t9 stores square being painted blue -- starts at top left corner
@@ -90,6 +111,8 @@ jal BounceUpFromBottom  #TODO change!!!
 
 
 StartDrawOnePlatform:
+addi $sp, $sp, -4 # moving pointer
+sw $ra, 0($sp)    # pushing value of $ra into stack
 # $t9 is the address of the current square being drawn on the platform -- starts from the left and goes right
 add $t9, $t2, $t4                 # first start at the row specified by $t2 offset by the random number in $t4
 addi $t8, $t9, 32                 # $t8 is the address of the sky square to the right of the platform (which is 8 units long x 4= 32)
@@ -102,9 +125,13 @@ addi $t9, $t9, 4                  # t9 = $t9 + 4 - incrementing to next square o
 j DrawOnePlatform                 # jumps back to start of DisplayPlatform
 EndDrawOnePlatform:
 addi $t9, $t9, -32                # set $t9 back the leftmost square of current platform
-jr $ra                            # jump out of function
+lw $ra, 0($sp)    # popping value of $ra out of stack 
+addi $sp, $sp, 4  # move pointer
+jr $ra            # exit out of function
 
 GenerateRandomPlatformLocation:
+addi $sp, $sp, -4 # moving pointer
+sw $ra, 0($sp)    # pushing value of $ra into stack
 # generating a random number for the platform - stored in $t4
 # representing horizontal  displacement from the left
 # width of display is 32 but don't want platform to be cut off (platform is 8 squares wide)
@@ -117,11 +144,16 @@ syscall               # random number will be in $a0
 addi $t7, $zero, 4    # $t7 stores 4
 mult $a0, $t7         # multiply random number by 4 and stores in  lo (hi not used since numbers are small)
 mflo $t4              # store the random number from lo in $4
-jr $ra                # jump out of function
+# jump out of function
+lw $ra, 0($sp)    # popping value of $ra out of stack 
+addi $sp, $sp, 4  # move pointer
+jr $ra            # exit out of function
 
 
 
 StartDrawDoodler:
+addi $sp, $sp, -4              # moving pointer
+sw $ra, 0($sp)                 # pushing value of $ra into stack
 # doodler starts in the middle of the bottom platform
 lw, $t9, bottomPlatformLocation# t9 stores the address of bottom right corner of doodler
 addi $t9, $t9, -116            # move up 1 row -128, then move right +12(3 units)
@@ -136,45 +168,64 @@ sw $t7, -256($t9)              # colour the right arm -- up 2 rows (-256)
 sw $t7, -252($t9)              # colour the chest -- up 2 rows (-256), right 1 (+4)
 sw $t7, -248($t9)              # colour the left arm -- up 2 rows (-256), right 2 (+8)
 sw $t7, -380($t9)              # colour the head -- 3 rows up (-384), 1 right (+4)  
-jr $ra                         # jump out of function
+# jump out of function
+lw $ra, 0($sp)                 # popping value of $ra out of stack 
+addi $sp, $sp, 4               # move pointer
+jr $ra                         # exit out of function
 
+CheckSquareSky:
+addi $sp, $sp, -4 # moving pointer
+sw $ra, 0($sp)    # pushing value of $ra into stack
+# we only want to colour over sky blocks
+# a0 stores the address of the square we want to check
+lw $t7, doodlerColour  # $t7 stores the colour of the doodler
+lw $t8, skyColour      # $t8 stores the colour of the sky
+bne  $a0, $t8, ExitCheckSquareSky # if the square is not sky coloued, don't overwrite it
+sw $t7, 0($a0)                     # colour the square the doodler colour
+ExitCheckSquareSky:# jump out of function
+lw $ra, 0($sp)    # poping value of $ra out of stack 
+addi $sp, $sp, 4  # move pointer
+jr $ra            # exit out of function
 
 
 BounceUpFromMiddle: 
 # bounces up and moves platforms 
-
 BounceUpFromBottom:
 # bounces up without moving platforms.
 # doodler can move up 15 squares
 addi $t3, $zero, 15    # doodler can move up 15 squares
 BounceUpFromBottomLoop: 
-beq $zero, $t3, Exit          # end loop once doodler moves up 15 squares
-j Sleep                 # sleeps for 1/4 sec
-TEMP1: #TODO Change j back to jal
-j MoveUpOne             # move doodler up 1 square
-TEMP2:
+beq $zero, $t3, Exit      # end loop once doodler moves up 15 squares
+jal Sleep                 # sleeps for 1/4 sec
+jal MoveUpOne             # move doodler up 1 square
 #TODO add check for left or right -- beq ? 
-addi $t3, $t3, -1        # increment $t3
-j BounceUpFromBottomLoop # jump back to begining of loop
+addi $t3, $t3, -1         # increment $t3
+j BounceUpFromBottomLoop  # jump back to begining of loop
 
 
 MoveUpOne:
+addi $sp, $sp, -4         # moving pointer
+sw $ra, 0($sp)            # pushing value of $ra into stack
 # moves up doodler by 1 square/row
 lw $t9, doodlerLocation   # load the address of the bottom left square of the doodler
 jal EraseDoodler          # erase the previous position of doodler
 addi $t9, $t9, -128       # update the position of doodler up 1 row (-128)
 sw $t9, doodlerLocation   # store updated location of doodler
 jal DrawDoodler           # redraw the doodler in row above
-#TODO change later to stack
-j TEMP2
+# jump out of function
+lw $ra, 0($sp)            # popping value of $ra out of stack 
+addi $sp, $sp, 4          # move pointer
+jr $ra                    # exit out of function
 
 EraseDoodler:
+addi $sp, $sp, -4              # moving pointer
+sw $ra, 0($sp)                 # pushing value of $ra into stack
 # don't change colour if it's green (platform) otherwise change it back to sky colour
 # TODO: check that the colour of the square is purple -- for now  will temp just set everything to sky colour
 
 # $t9 holds the address of the bottom left square of the doodler
-lw $t8, platformColour # $t8 sotres the colour of the platforms
-lw $t7, skyColour      #t7 stores the colour of the sky
+lw $t8, platformColour         # $t8 sotres the colour of the platforms
+lw $t7, skyColour              # t7 stores the colour of the sky
 
 # TODO;; maybe store the offsets in an array later so could loop over to populate 
 sw $t7, 0($t9)                 # colour the bottom left leg
@@ -184,16 +235,23 @@ sw $t7, -256($t9)              # colour the right arm -- up 2 rows (-256)
 sw $t7, -252($t9)              # colour the chest -- up 2 rows (-256), right 1 (+4)
 sw $t7, -248($t9)              # colour the left arm -- up 2 rows (-256), right 2 (+8)
 sw $t7, -380($t9)              # colour the head -- 3 rows up (-384), 1 right (+4)  
-jr $ra                         # jump out of function
+# jump out of function
+lw $ra, 0($sp)    # popping value of $ra out of stack 
+addi $sp, $sp, 4  # move pointer
+jr $ra            # exit out of function
 
 
 Sleep:
+addi $sp, $sp, -4 # moving pointer
+sw $ra, 0($sp)    # pushing value of $ra into stack
 # sleeps for 1/2 sec
-li $v0, 32  # command for sleep
-li $a0, 250 # sleep for 250 milliseconds
+li $v0, 32        # command for sleep
+li $a0, 250       # sleep for 250 milliseconds
 syscall
-#jr $ra    # exit out of function
-j TEMP1
+# jump out of function
+lw $ra, 0($sp)    # poping value of $ra out of stack 
+addi $sp, $sp, 4  # move pointer
+jr $ra            # exit out of function
 
 
 # keep in mind side movement later
