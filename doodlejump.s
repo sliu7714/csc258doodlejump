@@ -82,7 +82,7 @@ j DrawSky                          # jump back to start of DrawSky
 
 #TODO change 3968 to var later to know rel address of row of bottom platform
 StartDrawPlatforms:
-# Drawing the 3 platforms
+# Drawing the 3 platformss
 addi $t2, $t0, 3968               # $t2 stores the address of the rightmost square of the row that the platform will be on -- first starts with bottom right square   
 jal GenerateRandomPlatformLocation# this stores a random horizontal offset for address of platform in $t4
 jal StartDrawOnePlatform          # start to draw BOTTOM platform
@@ -159,6 +159,8 @@ sw $ra, 0($sp)                 # pushing value of $ra into stack
 lw, $t9, bottomPlatformLocation# t9 stores the address of bottom right corner of doodler
 addi $t9, $t9, -116            # move up 1 row -128, then move right +12(3 units)
 sw $t9, doodlerLocation        # store the location of doodler in memory
+lw $a3, doodlerColour          # parameter for DrawDoodler
+lw $a2, skyColour              # parameter for DrawDoodler
 jal DrawDoodler
 # jump out of function
 lw $ra, 0($sp)                 # popping value of $ra out of stack 
@@ -169,17 +171,19 @@ jr $ra                         # exit out of function
 DrawDoodler:
 addi $sp, $sp, -4              # moving pointer
 sw $ra, 0($sp)                 # pushing value of $ra into stack
-# draws doodler at doodlerLocation with doodlerColour
-lw $t7, doodlerColour          # $a3 stores the colour of the doodler
+# draws doodler(or over) at doodlerLocation with colour in $a3
+# only draws over squares of colour $a2
+# PARAMETER: $a2 stores the colour that we want to colour 
+# PARAMETER: $a3 stores the colour we want to draw with
 # draw the doodler one square at a time
 la $t6, doodlerFigureArray     # the address of the offset from doodlerLocation of the current block being drawn
 addi $t5, $t6, 28              # the address after the last square of the doodler -- 7 blocks x 4 = 28
-DrawDoodlerLoop:
+DrawDoodlerLoop:             
 beq $t6, $t5, EndDrawDoodler   # ends loop after reaching last block
 lw $t4, ($t6)                  # $t4 stores the offset value  amount from dooderFigureArray
-lw $t9, doodlerLocation        # $t9 stores the location of the square to colour
-add $t9, $t9, $t4              # apply offset in $t4 to $t9
-sw $t7, 0($t9)                 # colour square
+lw $a0, doodlerLocation        # $a0 stores the location of the square to colour- paramter for CheckSquareSky
+add $a0, $a0, $t4              # apply offset in $t4 to $a0
+jal CheckSquareSky             # colour square
 addi $t6, $t6, 4               # incremennt $t6 no next address in doodlerFigureArray
 j DrawDoodlerLoop              # go back to begining of loop
 EndDrawDoodler:
@@ -189,33 +193,60 @@ addi $sp, $sp, 4               # move pointer
 jr $ra                         # exit out of function
 
 CheckSquareSky:
-addi $sp, $sp, -4 # moving pointer
-sw $ra, 0($sp)    # pushing value of $ra into stack
-# we only want to colour over sky blocks
-# a0 stores the address of the square we want to check
-lw $t7, doodlerColour  # $t7 stores the colour of the doodler
-lw $t8, skyColour      # $t8 stores the colour of the sky
-bne  $a0, $t8, ExitCheckSquareSky # if the square is not sky coloued, don't overwrite it
-sw $t7, 0($a0)                     # colour the square the doodler colour
-ExitCheckSquareSky:# jump out of function
-lw $ra, 0($sp)    # poping value of $ra out of stack 
-addi $sp, $sp, 4  # move pointer
-jr $ra            # exit out of function
+addi $sp, $sp, -4                # moving pointer
+sw $ra, 0($sp)                   # pushing value of $ra into stack
+# we only want to colour with  $a3 over the block at address $a0 if it was the colour of $a3 
+# PARAMETER: a0 stores the address of the square we want to check
+# PARAMETER: a2 stores the colour that we want to colour over- sky or doodler
+# PARAMETER: a3 stores the colour we want to colour the square
+lw $t9, 0($a0)                   # colour at address $a0
+bne $t9, $a2, ExitCheckSquareSky # if the square is not the colour in $a2, don't overwrite it, just go back
+sw $a3, 0($a0)                   # colour the square the colour specified 
+ExitCheckSquareSky:              # jump out of function
+lw $ra, 0($sp)                   # poping value of $ra out of stack 
+addi $sp, $sp, 4                 # move pointer
+jr $ra                           # exit out of function
 
 
 BounceUpFromMiddle: 
 # bounces up and moves platforms 
+
 BounceUpFromBottom:
 # bounces up without moving platforms.
 # doodler can move up 15 squares
-addi $t3, $zero, 15    # doodler can move up 15 squares
+addi $t3, $zero, 15       # doodler can move up 15 squares
 BounceUpFromBottomLoop: 
-beq $zero, $t3, Exit      # end loop once doodler moves up 15 squares
-jal Sleep                 # sleeps for 1/4 sec
+beq $zero, $t3, DropDown  # end loop once doodler moves up 15 squares
+jal Sleep                 # sleeps 
+jal EraseDoodler          # erase the previous position of doodler
+
+ # Todo: add options to moveleft and right ____________________________________________________________________________________
+lw $t4, 0xffff0000       # $t5 will be 1 if there is keyboard input
+beq $t4, 1, KeyboardInput # keyboard input detected
+
 jal MoveUpOne             # move doodler up 1 square
-#TODO add check for left or right -- beq ? 
 addi $t3, $t3, -1         # increment $t3
 j BounceUpFromBottomLoop  # jump back to begining of loop
+
+
+DropDown:
+# makes doodler fall
+# exits if doodler falls below platform
+   # TODO: check for platform mid, bottom, 
+lw $t9, doodlerLocation
+addi $t3, $t9, 4092      # the bottom right square of the display
+DropDownLoop:
+bgt $t9, $t3, Exit       # exits program if doodler drops below the screen
+jal Sleep                # sleeps 
+jal EraseDoodler         # erase the previous position of doodler
+
+lw $t4, 0xffff0000       # $t5 will be 1 if there is keyboard input
+beq $t4, 1, KeyboardInput # keyboard input detected
+
+jal MoveDownOne          # moves the doodler down by 1 square
+lw $t9, doodlerLocation  # load updated doodler location
+j DropDownLoop           # jump back to begining of loop
+
 
 
 MoveUpOne:
@@ -223,9 +254,26 @@ addi $sp, $sp, -4         # moving pointer
 sw $ra, 0($sp)            # pushing value of $ra into stack
 # moves up doodler by 1 square/row
 lw $t9, doodlerLocation   # load the address of the bottom left square of the doodler
-jal EraseDoodler          # erase the previous position of doodler
 addi $t9, $t9, -128       # update the position of doodler up 1 row (-128)
 sw $t9, doodlerLocation   # store updated location of doodler
+lw $a3, doodlerColour     # parameter for DrawDoodler
+lw $a2, skyColour         # parameter for DrawDoodler
+jal DrawDoodler           # redraw the doodler in row above
+# jump out of function
+lw $ra, 0($sp)            # popping value of $ra out of stack 
+addi $sp, $sp, 4          # move pointer
+jr $ra                    # exit out of function
+
+
+MoveDownOne:
+addi $sp, $sp, -4         # moving pointer
+sw $ra, 0($sp)            # pushing value of $ra into stack
+# moves down doodler by 1 square/row
+lw $t9, doodlerLocation   # load the address of the bottom left square of the doodler
+addi $t9, $t9, 128        # update the position of doodler down 1 row (+128)
+sw $t9, doodlerLocation   # store updated location of doodler
+lw $a3, doodlerColour     # parameter for DrawDoodler
+lw $a2, skyColour         # parameter for DrawDoodler
 jal DrawDoodler           # redraw the doodler in row above
 # jump out of function
 lw $ra, 0($sp)            # popping value of $ra out of stack 
@@ -233,27 +281,17 @@ addi $sp, $sp, 4          # move pointer
 jr $ra                    # exit out of function
 
 EraseDoodler:
-addi $sp, $sp, -4              # moving pointer
-sw $ra, 0($sp)                 # pushing value of $ra into stack
-# don't change colour if it's green (platform) otherwise change it back to sky colour
-# TODO: check that the colour of the square is purple -- for now  will temp just set everything to sky colour
-
-# $t9 holds the address of the bottom left square of the doodler
-lw $t8, platformColour         # $t8 sotres the colour of the platforms
-lw $t7, skyColour              # t7 stores the colour of the sky
-lw $t9, doodlerLocation 
-# TODO;; maybe store the offsets in an array later so could loop over to populate 
-sw $t7, 0($t9)                 # colour the bottom left leg
-sw $t7, 8($t9)                 # colour the bottom right leg -- 2 right + 8
-sw $t7, -124($t9)              # colour the middle square -- 1 row up (-128) and 1 right (+4)
-sw $t7, -256($t9)              # colour the right arm -- up 2 rows (-256)
-sw $t7, -252($t9)              # colour the chest -- up 2 rows (-256), right 1 (+4)
-sw $t7, -248($t9)              # colour the left arm -- up 2 rows (-256), right 2 (+8)
-sw $t7, -380($t9)              # colour the head -- 3 rows up (-384), 1 right (+4)  
+addi $sp, $sp, -4     # moving pointer
+sw $ra, 0($sp)        # pushing value of $ra into stack
+# set the doodler squares back to skyColour 
+# don't change colour if it's any colour that is not doodlerColour
+lw $a3, skyColour     # parameter for DrawDoodler
+lw $a2, doodlerColour # parameter for DrawDoodler
+jal DrawDoodler
 # jump out of function
-lw $ra, 0($sp)    # popping value of $ra out of stack 
-addi $sp, $sp, 4  # move pointer
-jr $ra            # exit out of function
+lw $ra, 0($sp)        # popping value of $ra out of stack 
+addi $sp, $sp, 4      # move pointer
+jr $ra                # exit out of function
 
 
 Sleep:
@@ -261,13 +299,38 @@ addi $sp, $sp, -4 # moving pointer
 sw $ra, 0($sp)    # pushing value of $ra into stack
 # sleeps for 1/2 sec
 li $v0, 32        # command for sleep
-li $a0, 250       # sleep for 250 milliseconds
+li $a0, 250        # sleep for 250 milliseconds
 syscall
 # jump out of function
 lw $ra, 0($sp)    # poping value of $ra out of stack 
 addi $sp, $sp, 4  # move pointer
 jr $ra            # exit out of function
 
+
+KeyboardInput:
+addi $sp, $sp, -4        # moving pointer
+sw $ra, 0($sp)           # pushing value of $ra into stack
+lw $t4, 0xffff0004       # the ASCII value of the key that was pressed
+beq $t4, 0x6A, Pressedj  # j was pressed
+beq $t4, 0x6B, Pressedk  # k was pressed
+beq $t4, 0x73, Presseds  # s was pressed
+j EndKeyboardInput       # jump out of function if any other key pressed
+Pressedj:   # move to left
+lw $t9 doodlerLocation   # $t9 stores the location of the doodler
+addi $t9, $t9, 4         # add 4 (move right one square) to location
+sw $t9, doodlerLocation  # store location back into doodlerLocation
+j EndKeyboardInput       # exit out of function
+Pressedk:   # move to right
+lw $t9 doodlerLocation   # $t9 stores the location of the doodler
+addi $t9, $t9, -4        # sub 4 (move left one square) to location
+sw $t9, doodlerLocation  # store location back into doodlerLocation
+j EndKeyboardInput       # exit out of function
+Presseds:   # exit 
+j Exit                   # exit program
+EndKeyboardInput:
+lw $ra, 0($sp)           # popping value of $ra out of stack 
+addi $sp, $sp, 4         # move pointer
+jr $ra                   # exit out of function
 
 # keep in mind side movement later
 
