@@ -219,11 +219,8 @@ BounceUpFromBottomLoop:
 beq $zero, $t3, DropDown  # end loop once doodler moves up 15 squares
 jal Sleep                 # sleeps 
 jal EraseDoodler          # erase the previous position of doodler
-
- # Todo: add options to moveleft and right ____________________________________________________________________________________
 lw $t4, 0xffff0000       # $t5 will be 1 if there is keyboard input
 beq $t4, 1, KeyboardInput # keyboard input detected
-
 jal MoveUpOne             # move doodler up 1 square
 addi $t3, $t3, -1         # increment $t3
 j BounceUpFromBottomLoop  # jump back to begining of loop
@@ -233,20 +230,44 @@ DropDown:
 # makes doodler fall
 # exits if doodler falls below platform
    # TODO: check for platform mid, bottom, 
-lw $t9, doodlerLocation
+lw $t9, doodlerLocation  # $t9 stores the location of the doodler
 addi $t3, $t9, 4092      # the bottom right square of the display
 DropDownLoop:
 bgt $t9, $t3, Exit       # exits program if doodler drops below the screen
 jal Sleep                # sleeps 
 jal EraseDoodler         # erase the previous position of doodler
-
 lw $t4, 0xffff0000       # $t5 will be 1 if there is keyboard input
 beq $t4, 1, KeyboardInput # keyboard input detected
+
+# TODO: add check for platform below ___________________________________________________________________________________________
+# TOODL: do the check for bottom platform 
+jal CheckBottomPlatform  # check if doodler hits the bottom platform - if it does, doodler bounces up 
 
 jal MoveDownOne          # moves the doodler down by 1 square
 lw $t9, doodlerLocation  # load updated doodler location
 j DropDownLoop           # jump back to begining of loop
 
+CheckBottomPlatform:
+addi $sp, $sp, -4 # moving pointer
+sw $ra, 0($sp)    # pushing value of $ra into stack
+# checks if there is platform below doodler to bounce up from
+lw $t7, platformColour                 # $t7 stores the colour of the platforms
+lw $t9 doodlerLocation                 # $t9 stores the address of the square to check for platform
+addi $t9, $t9, 128                     # move down 1 row +128, then move right 2 +8(2 units)
+lw $t8, 0($t9)                           # $t8 stores the colour of the square to check for platform
+addi $t6, $t9, 12                      # $t6 stores the last square to check
+                                       # platform width, + 2 for doodler width = 10 squares to check x4 = 40 
+                                       # TODO: make sure not off by 1 ____________________________________________________________
+CheckBottomPlatformLoop:
+beq $t9, $t6, EndCheckBottomPlatform   # ends loop after reaching the last square to check
+beq $t8, $t7, BounceUpFromBottom       # if the square is a platform (has platform colour), the the doodler bounces up
+addi $t9, $t9, 4                       # move one square right (+4)
+lw $t8, 0($t9)                            # $t8 stores the colour of the square to check for platfom
+j CheckBottomPlatformLoop              # jump back to beginning of loop
+EndCheckBottomPlatform:
+lw $ra, 0($sp)                         # popping value of $ra out of stack 
+addi $sp, $sp, 4                       # move pointer
+jr $ra                                 # exit out of function
 
 
 MoveUpOne:
@@ -299,7 +320,7 @@ addi $sp, $sp, -4 # moving pointer
 sw $ra, 0($sp)    # pushing value of $ra into stack
 # sleeps for 1/2 sec
 li $v0, 32        # command for sleep
-li $a0, 250        # sleep for 250 milliseconds
+li $a0, 50        # sleep for 250 milliseconds
 syscall
 # jump out of function
 lw $ra, 0($sp)    # poping value of $ra out of stack 
@@ -317,12 +338,12 @@ beq $t4, 0x73, Presseds  # s was pressed
 j EndKeyboardInput       # jump out of function if any other key pressed
 Pressedj:   # move to left
 lw $t9 doodlerLocation   # $t9 stores the location of the doodler
-addi $t9, $t9, 4         # add 4 (move right one square) to location
+addi $t9, $t9, -4        # sub 4 (move left one square) to location
 sw $t9, doodlerLocation  # store location back into doodlerLocation
 j EndKeyboardInput       # exit out of function
 Pressedk:   # move to right
 lw $t9 doodlerLocation   # $t9 stores the location of the doodler
-addi $t9, $t9, -4        # sub 4 (move left one square) to location
+addi $t9, $t9, 4         # add 4 (move right one square) to location
 sw $t9, doodlerLocation  # store location back into doodlerLocation
 j EndKeyboardInput       # exit out of function
 Presseds:   # exit 
