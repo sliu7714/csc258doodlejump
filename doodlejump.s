@@ -42,9 +42,10 @@ bottomPlatformLocation:.word 0     # location of the leftmost square of the bott
                          
 doodlerFigureArray:    .space 7    # array of size 7 with the displacements for drawing the different parts of the doodler
 
+platformLocations:    .space 3     # array of size 3 to store the locations of the platforms
+                                   # first is bottom then middle then top
 
 .text
-lw $t0, displayAddress         # $t0 stores the base address for display
 
 # Initializes the doodlerFigureArray with the different displacements for the different parts of the doodler
 # order is left to right then bottom to up 
@@ -68,9 +69,10 @@ sw $t3, 24($t9)                # head -- 3 rows up (-384), 1 right (+$)
 Main: 
 
 StartDrawSky:
-addi $t9, $t0, 0    # $t9 stores square being painted blue -- starts at top left corner
-addi $t8, $t0, 4096 # $t8 stores the address after the last square that would be painted  (4092+4)
-lw $t7, skyColour   #$t7 stores the colour of the sky
+lw $t0, displayAddress             # $t0 stores the base address for display
+addi $t9, $t0, 0                   # $t9 stores square being painted blue -- starts at top left corner
+addi $t8, $t0, 4096                # $t8 stores the address after the last square that would be painted  (4092+4)
+lw $t7, skyColour                  #$t7 stores the colour of the sky
 DrawSky:
 # fill the entire display with blue
 beq $t9, $t8, StartDrawPlatforms   # branches if the bottom right corner is passed
@@ -83,6 +85,7 @@ j DrawSky                          # jump back to start of DrawSky
 #TODO change 3968 to var later to know rel address of row of bottom platform
 StartDrawPlatforms:
 # Drawing the 3 platformss
+lw $t0, displayAddress            # $t0 stores the base address for display
 addi $t2, $t0, 3968               # $t2 stores the address of the rightmost square of the row that the platform will be on -- first starts with bottom right square   
 jal GenerateRandomPlatformLocation# this stores a random horizontal offset for address of platform in $t4
 jal StartDrawOnePlatform          # start to draw BOTTOM platform
@@ -214,15 +217,17 @@ BounceUpFromMiddle:
 BounceUpFromBottom:
 # bounces up without moving platforms.
 # doodler can move up 15 squares
-addi $t3, $zero, 15       # doodler can move up 15 squares
-BounceUpFromBottomLoop: 
-beq $zero, $t3, DropDown  # end loop once doodler moves up 15 squares
+addi $s1, $zero, 15       # doodler can move up 15 squares
+BounceUpFromBottomLoop:
+beq $zero, $s1, DropDown  # end loop once doodler moves up 15 squares
 jal Sleep                 # sleeps 
 jal EraseDoodler          # erase the previous position of doodler
-lw $t4, 0xffff0000       # $t5 will be 1 if there is keyboard input
+lw $t4, 0xffff0000        # $t5 will be 1 if there is keyboard input
 beq $t4, 1, KeyboardInput # keyboard input detected
-jal MoveUpOne             # move doodler up 1 square
-addi $t3, $t3, -1         # increment $t3
+
+addi $a1, $zero, -128     # parameter for MoveDoodler
+jal MoveDoodler           # move doodler up 1 square (-128 in $a1)
+addi $s1, $s1, -1         # increment $t3
 j BounceUpFromBottomLoop  # jump back to begining of loop
 
 
@@ -231,38 +236,39 @@ DropDown:
 # exits if doodler falls below platform
    # TODO: check for platform mid, bottom, 
 lw $t9, doodlerLocation  # $t9 stores the location of the doodler
-addi $t3, $t9, 4092      # the bottom right square of the display
+lw $t0, displayAddress   # $t0 stores the address of the top left square of the display
+addi $s1, $t0, 4092      # $s1 stores the bottom right square of the display
 DropDownLoop:
-bgt $t9, $t3, Exit       # exits program if doodler drops below the screen
+bgt $t9, $s1, Exit       # exits program if doodler drops below the screen
 jal Sleep                # sleeps 
 jal EraseDoodler         # erase the previous position of doodler
 lw $t4, 0xffff0000       # $t5 will be 1 if there is keyboard input
 beq $t4, 1, KeyboardInput # keyboard input detected
 
 # TODO: add check for platform below ___________________________________________________________________________________________
-# TOODL: do the check for bottom platform 
+# TOODL: do the check for middle platform
 jal CheckBottomPlatform  # check if doodler hits the bottom platform - if it does, doodler bounces up 
 
-jal MoveDownOne          # moves the doodler down by 1 square
+addi $a1, $zero, 128     # parameter for MoveDoodler
+jal MoveDoodler          # moves the doodler down by 1 square
 lw $t9, doodlerLocation  # load updated doodler location
 j DropDownLoop           # jump back to begining of loop
 
 CheckBottomPlatform:
-addi $sp, $sp, -4 # moving pointer
-sw $ra, 0($sp)    # pushing value of $ra into stack
+addi $sp, $sp, -4                      # moving pointer
+sw $ra, 0($sp)                         # pushing value of $ra into stack
 # checks if there is platform below doodler to bounce up from
 lw $t7, platformColour                 # $t7 stores the colour of the platforms
 lw $t9 doodlerLocation                 # $t9 stores the address of the square to check for platform
-addi $t9, $t9, 128                     # move down 1 row +128, then move right 2 +8(2 units)
-lw $t8, 0($t9)                           # $t8 stores the colour of the square to check for platform
+addi $t9, $t9, 128                     # move down 1 row +128
+lw $t8, 0($t9)                         # $t8 stores the colour of the square to check for platform
 addi $t6, $t9, 12                      # $t6 stores the last square to check
-                                       # platform width, + 2 for doodler width = 10 squares to check x4 = 40 
-                                       # TODO: make sure not off by 1 ____________________________________________________________
+                                       # doodler is 3 squares wide x 4 = 12
 CheckBottomPlatformLoop:
 beq $t9, $t6, EndCheckBottomPlatform   # ends loop after reaching the last square to check
 beq $t8, $t7, BounceUpFromBottom       # if the square is a platform (has platform colour), the the doodler bounces up
 addi $t9, $t9, 4                       # move one square right (+4)
-lw $t8, 0($t9)                            # $t8 stores the colour of the square to check for platfom
+lw $t8, 0($t9)                         # $t8 stores the colour of the square to check for platfom
 j CheckBottomPlatformLoop              # jump back to beginning of loop
 EndCheckBottomPlatform:
 lw $ra, 0($sp)                         # popping value of $ra out of stack 
@@ -270,12 +276,14 @@ addi $sp, $sp, 4                       # move pointer
 jr $ra                                 # exit out of function
 
 
-MoveUpOne:
+
+MoveDoodler:
 addi $sp, $sp, -4         # moving pointer
 sw $ra, 0($sp)            # pushing value of $ra into stack
-# moves up doodler by 1 square/row
+# moves up doodler by offset specified in $a1
+# PARAMETER: $a1 stores the offset to move the doodler by(relative to display)
 lw $t9, doodlerLocation   # load the address of the bottom left square of the doodler
-addi $t9, $t9, -128       # update the position of doodler up 1 row (-128)
+add $t9, $t9, $a1         # update the position of doodler by ofset specified by value in $a1
 sw $t9, doodlerLocation   # store updated location of doodler
 lw $a3, doodlerColour     # parameter for DrawDoodler
 lw $a2, skyColour         # parameter for DrawDoodler
@@ -285,17 +293,6 @@ lw $ra, 0($sp)            # popping value of $ra out of stack
 addi $sp, $sp, 4          # move pointer
 jr $ra                    # exit out of function
 
-
-MoveDownOne:
-addi $sp, $sp, -4         # moving pointer
-sw $ra, 0($sp)            # pushing value of $ra into stack
-# moves down doodler by 1 square/row
-lw $t9, doodlerLocation   # load the address of the bottom left square of the doodler
-addi $t9, $t9, 128        # update the position of doodler down 1 row (+128)
-sw $t9, doodlerLocation   # store updated location of doodler
-lw $a3, doodlerColour     # parameter for DrawDoodler
-lw $a2, skyColour         # parameter for DrawDoodler
-jal DrawDoodler           # redraw the doodler in row above
 # jump out of function
 lw $ra, 0($sp)            # popping value of $ra out of stack 
 addi $sp, $sp, 4          # move pointer
@@ -320,7 +317,7 @@ addi $sp, $sp, -4 # moving pointer
 sw $ra, 0($sp)    # pushing value of $ra into stack
 # sleeps for 1/2 sec
 li $v0, 32        # command for sleep
-li $a0, 50        # sleep for 250 milliseconds
+li $a0, 20        # sleep for 250 milliseconds
 syscall
 # jump out of function
 lw $ra, 0($sp)    # poping value of $ra out of stack 
