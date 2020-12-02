@@ -154,20 +154,35 @@ jr $ra            # exit out of function
 StartDrawDoodler:
 addi $sp, $sp, -4              # moving pointer
 sw $ra, 0($sp)                 # pushing value of $ra into stack
+# stores start of doodler's location at beginning of game
 # doodler starts in the middle of the bottom platform
 lw, $t9, bottomPlatformLocation# t9 stores the address of bottom right corner of doodler
 addi $t9, $t9, -116            # move up 1 row -128, then move right +12(3 units)
 sw $t9, doodlerLocation        # store the location of doodler in memory
+jal DrawDoodler
+# jump out of function
+lw $ra, 0($sp)                 # popping value of $ra out of stack 
+addi $sp, $sp, 4               # move pointer
+jr $ra                         # exit out of function
+
+
 DrawDoodler:
-lw $t7, doodlerColour          # $t7 stores the colour of the doodler
+addi $sp, $sp, -4              # moving pointer
+sw $ra, 0($sp)                 # pushing value of $ra into stack
+# draws doodler at doodlerLocation with doodlerColour
+lw $t7, doodlerColour          # $a3 stores the colour of the doodler
 # draw the doodler one square at a time
-sw $t7, 0($t9)                 # colour the bottom left leg
-sw $t7, 8($t9)                 # colour the bottom right leg -- 2 right + 8
-sw $t7, -124($t9)              # colour the middle square -- 1 row up (-128) and 1 right (+4)
-sw $t7, -256($t9)              # colour the right arm -- up 2 rows (-256)
-sw $t7, -252($t9)              # colour the chest -- up 2 rows (-256), right 1 (+4)
-sw $t7, -248($t9)              # colour the left arm -- up 2 rows (-256), right 2 (+8)
-sw $t7, -380($t9)              # colour the head -- 3 rows up (-384), 1 right (+4)  
+la $t6, doodlerFigureArray     # the address of the offset from doodlerLocation of the current block being drawn
+addi $t5, $t6, 28              # the address after the last square of the doodler -- 7 blocks x 4 = 28
+DrawDoodlerLoop:
+beq $t6, $t5, EndDrawDoodler   # ends loop after reaching last block
+lw $t4, ($t6)                  # $t4 stores the offset value  amount from dooderFigureArray
+lw $t9, doodlerLocation        # $t9 stores the location of the square to colour
+add $t9, $t9, $t4              # apply offset in $t4 to $t9
+sw $t7, 0($t9)                 # colour square
+addi $t6, $t6, 4               # incremennt $t6 no next address in doodlerFigureArray
+j DrawDoodlerLoop              # go back to begining of loop
+EndDrawDoodler:
 # jump out of function
 lw $ra, 0($sp)                 # popping value of $ra out of stack 
 addi $sp, $sp, 4               # move pointer
@@ -226,7 +241,7 @@ sw $ra, 0($sp)                 # pushing value of $ra into stack
 # $t9 holds the address of the bottom left square of the doodler
 lw $t8, platformColour         # $t8 sotres the colour of the platforms
 lw $t7, skyColour              # t7 stores the colour of the sky
-
+lw $t9, doodlerLocation 
 # TODO;; maybe store the offsets in an array later so could loop over to populate 
 sw $t7, 0($t9)                 # colour the bottom left leg
 sw $t7, 8($t9)                 # colour the bottom right leg -- 2 right + 8
