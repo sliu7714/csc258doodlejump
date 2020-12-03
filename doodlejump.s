@@ -35,11 +35,13 @@ skyColour:      .word 0xd6edee     # a blue colour for the sky
 platformColour: .word 0x91c078     # a green colour for the platforms
 doodlerColour:  .word 0xc7bfec     # a purple colour for the doodler 
 
-doodlerLocation:       .word 0     # location of the bottom left square of the doodler
-                      
 platformLocations: .word 0:3       # array of size 3 to store the locations of the platforms
                                    # first is bottom then middle then top
                                    # initialized to top left square of display
+
+doodlerLocation:       .word 0     # location of the bottom left square of the doodler
+                      
+
                                     
 doodlerFigureArray:    .word 0:7   # array of size 7 with the displacements for drawing the different parts of the doodler
 
@@ -79,29 +81,17 @@ addi $t3, $t3, -1408              # go up 11 rows (-128 per row x 11 rows = -140
 sw $t3, 8($t9)                    # store location of bottom platform row
 
 
-StartDrawSky:
-lw $t0, displayAddress             # $t0 stores the base address for display
-addi $t9, $t0, 0                   # $t9 stores square being painted blue -- starts at top left corner
-addi $t8, $t0, 4096                # $t8 stores the address after the last square that would be painted  (4092+4)
-lw $t7, skyColour                  #$t7 stores the colour of the sky
-DrawSky:
-# fill the entire display with blue
-beq $t9, $t8, StartDrawPlatforms   # branches if the bottom right corner is passed
-sw $t7 0($t9)                      # stores the sky colour in the square with address at $t9
-addi $t9, $t9, 4                   # incrementing to next square
-j DrawSky                          # jump back to start of DrawSky
-
-
 StartDrawPlatforms:
 # Drawing the 3 platforms at the start of game
+jal StartDrawSky                     # first draw the sky
 lw $t0, displayAddress               # $t0 stores the base address for display
 la $s7, platformLocations            # $s7 stores the address of the array with platform locations - bottom first
 addi $s6, $s7, 12                    # $s6 stores the address of the last location in the platformLocations array
 StartDrawPlatformsLoop:
 beq $s7, $s6, ExitStartDrawPlatforms # exit loop after drawing 3 platforms
 lw $a2 0($s7)                        # parameter for GenerateRandomPlatformLocation -- displace the address stored at $s7
-addi $a3, $s7, 0                 # parameter for GenerateRandomPlatformLocation -- store the new address at $s7
-jal GenerateRandomPlatformLocation   # this stores a random horizontal offset for address of platform in $v0
+addi $a3, $s7, 0                     # parameter for GenerateRandomPlatformLocation -- store the new address at $s7
+jal GenerateRandomPlatformLocation   # applies random horizontal displacement to address $a2 and stores it at $a3
 lw $a3, 0($s7)                       # parameter for StartDrawOnePlatform- location we want to draw at
 jal StartDrawOnePlatform             # start to draw one of the platforms
 addi $s7, $s7, 4                     # move address to next word in array
@@ -117,7 +107,7 @@ addi $sp, $sp, -4                 # moving pointer
 sw $ra, 0($sp)                    # pushing value of $ra into stack
 # displays a flat platform is 8 units long starting at  the address stored at $a3
 # PARAMETER: $a3 stores the location of the leftmost square of the platform 
-addi $t9, $a3, 0                    # $t9 is the address of the current square being drawn on the platform 
+addi $t9, $a3, 0                  # $t9 is the address of the current square being drawn on the platform 
                                   #  starts from the left and goes right
 addi $t8, $t9, 32                 # $t8 is the address of the sky square to the right of the platform (which is 8 units long x 4= 32)
 lw $t7, platformColour            # $t7 stores the colour of the platform
@@ -128,7 +118,7 @@ sw $t7, 0($t9)                    # stores the platform colour into the corrispo
 addi $t9, $t9, 4                  # t9 = $t9 + 4 - incrementing to next square of platform (right)
 j DrawOnePlatform                 # jumps back to start of DisplayPlatform
 EndDrawOnePlatform:
-addi $t9, $t9, -32                # set $t9 back the leftmost square of current platform
+addi $t9, $t9, -32                # set $t9 back the leftmost square of current platform   --- TODO _________________ needed???________________
 lw $ra, 0($sp)                    # popping value of $ra out of stack 
 addi $sp, $sp, 4                  # move pointer
 jr $ra                            # exit out of function
@@ -160,12 +150,31 @@ addi $sp, $sp, 4      # move pointer
 jr $ra                # exit out of function
 
 
+StartDrawSky:
+addi $sp, $sp, -4                  # moving pointer
+sw $ra, 0($sp)                     # pushing value of $ra into stack
+# fills the entire display with skyColour
+lw $t0, displayAddress             # $t0 stores the base address for display
+addi $t9, $t0, 0                   # $t9 stores square being painted blue -- starts at top left corner
+addi $t8, $t0, 4096                # $t8 stores the address after the last square that would be painted  (4092+4)
+lw $t7, skyColour                  #$t7 stores the colour of the sky
+DrawSkyLoop:
+# fill the entire display with blue
+beq $t9, $t8, EndDrawSky   # branches if the bottom right corner is passed
+sw $t7 0($t9)                      # stores the sky colour in the square with address at $t9
+addi $t9, $t9, 4                   # incrementing to next square
+j DrawSkyLoop                          # jump back to start of DrawSky
+EndDrawSky:
+lw $ra, 0($sp)                     # popping value of $ra out of stack 
+addi $sp, $sp, 4                   # move pointer
+jr $ra                             # exit out of function
+
 StartDrawDoodler:
 addi $sp, $sp, -4              # moving pointer
 sw $ra, 0($sp)                 # pushing value of $ra into stack
 # stores start of doodler's location at beginning of game
 # doodler starts in the middle of the bottom platform
-la $t0, platformLocations      # address of where the bottom platform is stored________________________________________---
+la $t0, platformLocations      # address of where the bottom platform is stored
 lw, $t9, 0($t0)                # t9 stores the address of bottom right corner of doodler
 addi $t9, $t9, -116            # move up 1 row -128, then move right +12(3 units)
 sw $t9, doodlerLocation        # store the location of doodler in memory
@@ -221,7 +230,6 @@ jr $ra                           # exit out of function
 DropDown:
 # makes doodler fall
 # exits if doodler falls below platform
-   # TODO: check for platform mid, bottom, 
 lw $t9, doodlerLocation  # $t9 stores the location of the doodler
 lw $t0, displayAddress   # $t0 stores the address of the top left square of the display
 addi $s1, $t0, 4092      # $s1 stores the bottom right square of the display
@@ -230,11 +238,8 @@ bgt $t9, $s1, Exit       # exits program if doodler drops below the screen
 jal Sleep                # sleeps 
 jal EraseDoodler         # erase the previous position of doodler
 lw $t4, 0xffff0000       # $t5 will be 1 if there is keyboard input
-beq $t4, 1, KeyboardInput # keyboard input detected
-
-# TODO: add check for platform below ___________________________________________________________________________________________
-jal CheckPlatform  # check if doodler hits the bottom platform - if it does, doodler bounces up 
-
+beq $t4, 1, KeyboardInput# keyboard input detected
+jal CheckPlatform        # check if doodler hits the bottom platform - if it does, doodler bounces up 
 addi $a1, $zero, 128     # parameter for MoveDoodler
 jal MoveDoodler          # moves the doodler down by 1 square
 lw $t9, doodlerLocation  # load updated doodler location
@@ -279,18 +284,98 @@ IsBottom:
 j BounceUpFromBottom     # if the platform below the doodler is the bottom platform
   
 
-
-
-
 BounceUpFromMiddle: 
+# TODO: finish_________________________________________________________________________________________________________________________
 # bounces up and moves platforms 
+# doodler can move up 15 squares
+# first move up 11 squares with platforms, then move remaining 4 with only doodler moving
+jal FirstRedrawPlatform   # first 2 of the 11 need to be diff since generate new platform
+addi $s1, $zero, 9        # platforms move up 11- 2 (from FirstDrawPlatform) = 9 squares
+BounceUpFromMiddleLoop:
+beq $zero, $s1, Exit  # end loop once doodler moves up 15 squares
+jal  RedrawScreen         # redraw the platforms 1 square up
+#jal  BounceUp             # doodle move up 1 square w side movement             TODO CHANG______________________________________
 
-#TEST
-lw $t0, displayAddress
-lw $t1, doodlerColour 
-sw $t1, 0($t0)
-j Exit
-#TEST
+#jal CheckKeyboardInput
+#lw $a3, doodlerColour     # parameter for DrawDoodler
+#lw $a2, skyColour         # parameter for DrawDoodler
+#jal DrawDoodler           # redraw the doodler in row above
+# AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+
+addi $s1, $s1, -1         # increment $t3
+j BounceUpFromMiddleLoop  # jump back to begining of loop
+#TODO update - change drop down to 2nd loop ------------------------------------------------------------------------------------------
+
+
+
+FirstRedrawPlatform: 
+addi $sp, $sp, -4                    # moving pointer
+sw $ra, 0($sp)                       # pushing value of $ra into stack
+# start here when moving the platforms up
+la $t1, platformLocations            # $t1 stores the address for array that stores the platform Locations
+lw $t2, 4($t1)                       # address of the middle platform
+sw $t2, 0($t1)                       # set previous middle platform's address to be the new bottom platform
+lw $t2, 8($t1)                       # address of the top platform 
+sw $t2, 4($t1)                       # set previous top platform's address to middle 
+                                     # note that previous top is still top
+                                     # so  top platform i same as middle (so no extra platforms are drawn)
+jal RedrawScreen                     # redraw screen with platforms moved up 
+jal RedrawScreen                     # x2
+# -----------------------------------------------------------------------------------------------------------------------------------
+
+lw $t0, displayAddress               # $t0 stores the address of the top left corner of the display 
+                                     # the top platform would be on the top row
+la $t1, platformLocations 
+addi $a2, $t0, 0                     # parameter for GenerateRandomPlatformLocation -- displace the top address
+li $a3, 0                     
+addi $a3, $t1, 8                     # parameter for GenerateRandomPlatformLocation -- store the new address 8($t1)
+jal GenerateRandomPlatformLocation   # applies random horizontal displacement to address $a2 and stores it at $a3
+la $t1, platformLocations            # $t1 stores the address for array that stores the platform Locations
+lw $a3, 8($t1)                       # parameter for StartDrawOnePlatform- location we want to draw at-- top platform
+jal StartDrawOnePlatform             # start to draw one of the platforms
+
+# jump out of function
+lw $ra, 0($sp)         # popping value of $ra out of stack 
+addi $sp, $sp, 4       # move pointer
+jr $ra                 # exit out of function
+
+
+RedrawScreen:
+addi $sp, $sp, -4     # moving pointer
+sw $ra, 0($sp)        # pushing value of $ra into stack
+# redraws the entire screem with platforms moved up 1 square
+jal StartDrawSky      # draw sky first
+# -----------------------------------------------------------------------------------
+#lw $a3, doodlerColour #  parameter for DrawDoodler
+#lw $a2, skyColour     #  parameter for DrawDoodler
+#jal DrawDoodler       #  redraw the doodler in row abov
+jal MovePlatformsUp   # draw each of the platform moved up
+# jump out of function
+lw $ra, 0($sp)        # popping value of $ra out of stack 
+addi $sp, $sp, 4      # move pointer
+jr $ra                # exit out of function
+
+
+MovePlatformsUp: 
+addi $sp, $sp, -4             # moving pointer
+sw $ra, 0($sp)                # pushing value of $ra into stack
+# draws platfroms on the display moved up 1 square
+addi $t3, $zero, 3
+la $t1, platformLocations     # $t1 stores the address of the array that the address of the platform is
+MovePlatformUpLoop:
+beqz $t3, EndMovePlatformUp    # end loop after the 3 platforms have been drawn
+lw $t2, 0($t1)                # $t2 stores the address of the left square of the platform
+addi $t2, $t2, +128           # move addresss of the platfroms down 1 row (+128)
+sw $t2, 0($t1)                # store the updated address of the platform
+lw $a3, 0($t1)                # $a3 parameter for StartDrawOnePlatform -- location of the leftmost square of the platform
+jal StartDrawOnePlatform      # draw the platform 
+addi $t1, $t1, 4              # increment address in array for platformLocations
+addi $t3, $t3, -1             # increment $t3
+j MovePlatformUpLoop          # jump back to beginning of loop
+EndMovePlatformUp:
+lw $ra, 0($sp)                # popping value of $ra out of stack 
+addi $sp, $sp, 4              # move pointer
+jr $ra                        # exit out of function
 
 
 BounceUpFromBottom:
@@ -299,16 +384,23 @@ BounceUpFromBottom:
 addi $s1, $zero, 15       # doodler can move up 15 squares
 BounceUpFromBottomLoop:
 beq $zero, $s1, DropDown  # end loop once doodler moves up 15 squares
-jal Sleep                 # sleeps
-jal EraseDoodler          # erase the previous position of doodler
-lw $t4, 0xffff0000        # $t5 will be 1 if there is keyboard input
-beq $t4, 1, KeyboardInput # keyboard input detected
-
-addi $a1, $zero, -128     # parameter for MoveDoodler
-jal MoveDoodler           # move doodler up 1 square (-128 in $a1)
+jal BounceUp              # doodler move up 1 square w side movement
 addi $s1, $s1, -1         # increment $t3
 j BounceUpFromBottomLoop  # jump back to begining of loop
 
+BounceUp:
+addi $sp, $sp, -4         # moving pointer
+sw $ra, 0($sp)            # pushing value of $ra into stack
+# allow doodler to move up 1 square with side movement too
+jal Sleep                 # sleeps
+jal EraseDoodler          # erase the previous position of doodler
+jal CheckKeyboardInput    # check for keyboard input
+addi $a1, $zero, -128     # parameter for MoveDoodler
+jal MoveDoodler           # move doodler up 1 square (-128 in $a1)
+# jump out of function
+lw $ra, 0($sp)            # popping value of $ra out of stack 
+addi $sp, $sp, 4          # move pointer
+jr $ra                    # exit out of function
 
 MoveDoodler:
 addi $sp, $sp, -4         # moving pointer
@@ -354,30 +446,37 @@ addi $sp, $sp, 4  # move pointer
 jr $ra            # exit out of function
 
 
+CheckKeyboardInput:
+addi $sp, $sp, -4         # moving pointer
+sw $ra, 0($sp)            # pushing value of $ra into stack
+# checks for keyboard input
+lw $t4, 0xffff0000        # $t5 will be 1 if there is keyboard input
+beq $t4, 1, KeyboardInput # keyboard input detected
+EndCheckKeyboardInput: 
+lw $ra, 0($sp)            # popping value of $ra out of stack 
+addi $sp, $sp, 4          # move pointer
+jr $ra                    # exit out of function
+
+
 KeyboardInput:
-addi $sp, $sp, -4        # moving pointer
-sw $ra, 0($sp)           # pushing value of $ra into stack
 lw $t4, 0xffff0004       # the ASCII value of the key that was pressed
 beq $t4, 0x6A, Pressedj  # j was pressed
 beq $t4, 0x6B, Pressedk  # k was pressed
 beq $t4, 0x73, Presseds  # s was pressed
-j EndKeyboardInput       # jump out of function if any other key pressed
+j EndCheckKeyboardInput  # jump out of function if any other key pressed
 Pressedj:   # move to left
 lw $t9 doodlerLocation   # $t9 stores the location of the doodler
 addi $t9, $t9, -4        # sub 4 (move left one square) to location
 sw $t9, doodlerLocation  # store location back into doodlerLocation
-j EndKeyboardInput       # exit out of function
+j EndCheckKeyboardInput  # exit out of function
 Pressedk:   # move to right
 lw $t9 doodlerLocation   # $t9 stores the location of the doodler
 addi $t9, $t9, 4         # add 4 (move right one square) to location
 sw $t9, doodlerLocation  # store location back into doodlerLocation
-j EndKeyboardInput       # exit out of function
+j EndCheckKeyboardInput  # exit out of function
 Presseds:   # exit 
 j Exit                   # exit program
-EndKeyboardInput:
-lw $ra, 0($sp)           # popping value of $ra out of stack 
-addi $sp, $sp, 4         # move pointer
-jr $ra                   # exit out of function
+
 
 
 #travel down() -- 
@@ -386,6 +485,8 @@ jr $ra                   # exit out of function
 
 # condition if doodler hits a platform on the way down and bouncesto move platforma up
 # doodler could only reach bottom platform
+
+# lives??? hearts
 
 Exit:
 li $v0, 10            # terminate the program gracefully
