@@ -36,14 +36,12 @@ platformColour: .word 0x91c078     # a green colour for the platforms
 doodlerColour:  .word 0xc7bfec     # a purple colour for the doodler 
 
 doodlerLocation:       .word 0     # location of the bottom left square of the doodler
-topPlatformLocation:   .word 0     # location of the leftmost square of the top platform
-midPlatformLocation:   .word 0     # location of the leftmost square of the middle platform
-bottomPlatformLocation:.word 0     # location of the leftmost square of the bottom platform
-                         
-doodlerFigureArray:    .space 7    # array of size 7 with the displacements for drawing the different parts of the doodler
-
-platformLocations:    .space 3     # array of size 3 to store the locations of the platforms
+                      
+platformLocations: .word 0:3       # array of size 3 to store the locations of the platforms
                                    # first is bottom then middle then top
+                                   # initialized to top left square of display
+                                    
+doodlerFigureArray:    .word 0:7   # array of size 7 with the displacements for drawing the different parts of the doodler
 
 .text
 
@@ -51,7 +49,7 @@ platformLocations:    .space 3     # array of size 3 to store the locations of t
 # order is left to right then bottom to up 
 la $t9, doodlerFigureArray    # $t9 stores the address of the first item in the array
 addi $t3, $zero, 0             # $t3 stores the displacement for one part
-sw $t3, doodlerFigureArray                 # bottom left leg
+sw $t3, 0($t9)                 # bottom left leg
 addi $t3, $zero, 8 
 sw $t3, 4($t9)                 # bottom right leg -- 2 right + 8
 addi $t3, $zero, -124
@@ -64,7 +62,21 @@ addi $t3, $zero, -248
 sw $t3, 20($t9)                # left arm -- up 2 rows (-256), right 2 (+8)
 addi $t3, $zero, -380
 sw $t3, 24($t9)                # head -- 3 rows up (-384), 1 right (+$)
-#TODO: need to test thi
+
+
+# Initializes the platformLocations to be the left square on the desired row
+# bottom platfom on bottom row of display
+# platforms have 10 squares in between them
+lw $t0, displayAddress            # $t0 stores the base address for display
+la $t9, platformLocations         # $t9 stores the address in memory where the address of the bottom platform is stored
+addi $t3, $t0, 3968               # the bottom platform is starts on the left square of the bottom row
+sw $t3, 0($t9)                    # store location of bottom platform row
+addi $t3, $t3, -1280              # go up 10 rows (-128 per row x 10 rows = -1280)      
+sw $t3, 4($t9)                    # store location of middle platform row
+addi $t3, $t3, -1280              # go up 10 rows (-128 per row x 10 rows = -1280)      
+sw $t3, 8($t9)                    # store location of bottom platform row
+
+
 
 Main: 
 
@@ -84,40 +96,32 @@ j DrawSky                          # jump back to start of DrawSky
 
 #TODO change 3968 to var later to know rel address of row of bottom platform
 StartDrawPlatforms:
-# Drawing the 3 platformss
-lw $t0, displayAddress            # $t0 stores the base address for display
-addi $t2, $t0, 3968               # $t2 stores the address of the rightmost square of the row that the platform will be on -- first starts with bottom right square   
-jal GenerateRandomPlatformLocation# this stores a random horizontal offset for address of platform in $t4
-jal StartDrawOnePlatform          # start to draw BOTTOM platform
-                                  # t9 now stores the address of the bottom platform
-sw $t9, bottomPlatformLocation    # store location of bottom platform
+# Drawing the 3 platforms at the start of game
+lw $t0, displayAddress               # $t0 stores the base address for display
+la $s7, platformLocations            # $s7 stores the address of the array with platform locations - bottom first
+addi $s6, $s7, 12                    # $s6 stores the address of the last location in the platformLocations array
+StartDrawPlatformsLoop:
+beq $s7, $s6, ExitStartDrawPlatforms # exit loop after drawing 3 platforms
+lw $a2 0($s7)                        # parameter for GenerateRandomPlatformLocation -- displace the address stored at $s7
+addi $a3, $s7, 0                 # parameter for GenerateRandomPlatformLocation -- store the new address at $s7
+jal GenerateRandomPlatformLocation   # this stores a random horizontal offset for address of platform in $v0
+lw $a3, 0($s7)                       # parameter for StartDrawOnePlatform- location we want to draw at
+jal StartDrawOnePlatform             # start to draw one of the platforms
+addi $s7, $s7, 4                     # move address to next word in array
+j StartDrawPlatformsLoop             # jump back to beginning of loop
+ExitStartDrawPlatforms:
+jal StartDrawDoodler                 # now we go to draw the doodler
+jal BounceUpFromBottom               # now the doodler bounces up
 
-addi $t2, $t2, -1280              # moves row of platform up 10 squares
-                                  # going up 1 row is difference of -128 so 10 rows is 10(-128) = -1280           
-jal GenerateRandomPlatformLocation# this stores a random horizontal offset for address of platform in $t4             
-jal StartDrawOnePlatform          # start to draw the MIDDLE platform
-sw $t9, midPlatformLocation       # store the location of middle platform
-
-addi $t2, $t2, -1280              # moves row of platform up 10 squares
-jal GenerateRandomPlatformLocation# this stores a random horizontal offset for address of platform in $t4
-jal StartDrawOnePlatform          # start to draw TOP platform
-sw $t9 topPlatformLocation        # store location of top platform
-
-jal StartDrawDoodler              #  now we go to draw the doodler
-jal BounceUpFromBottom  #TODO change!!!
-
-#MoveRow:
-# moves up address in $t2 up 10 squares(rows)
-# there will be 10 units between platforms
-#addi $t2, $t2, -1280   # going up 1 row is difference of -128 so 10 rows is 10(-128) = -1280
-#jr $ra                 # jump back out of function
 
 
 StartDrawOnePlatform:
-addi $sp, $sp, -4 # moving pointer
-sw $ra, 0($sp)    # pushing value of $ra into stack
-# $t9 is the address of the current square being drawn on the platform -- starts from the left and goes right
-add $t9, $t2, $t4                 # first start at the row specified by $t2 offset by the random number in $t4
+addi $sp, $sp, -4                 # moving pointer
+sw $ra, 0($sp)                    # pushing value of $ra into stack
+# displays a flat platform is 8 units long starting at  the address stored at $a3
+# PARAMETER: $a3 stores the location of the leftmost square of the platform 
+addi $t9, $a3, 0                    # $t9 is the address of the current square being drawn on the platform 
+                                  #  starts from the left and goes right
 addi $t8, $t9, 32                 # $t8 is the address of the sky square to the right of the platform (which is 8 units long x 4= 32)
 lw $t7, platformColour            # $t7 stores the colour of the platform
 DrawOnePlatform: 
@@ -128,30 +132,35 @@ addi $t9, $t9, 4                  # t9 = $t9 + 4 - incrementing to next square o
 j DrawOnePlatform                 # jumps back to start of DisplayPlatform
 EndDrawOnePlatform:
 addi $t9, $t9, -32                # set $t9 back the leftmost square of current platform
-lw $ra, 0($sp)    # popping value of $ra out of stack 
-addi $sp, $sp, 4  # move pointer
-jr $ra            # exit out of function
+lw $ra, 0($sp)                    # popping value of $ra out of stack 
+addi $sp, $sp, 4                  # move pointer
+jr $ra                            # exit out of function
 
 GenerateRandomPlatformLocation:
-addi $sp, $sp, -4 # moving pointer
-sw $ra, 0($sp)    # pushing value of $ra into stack
+addi $sp, $sp, -4     # moving pointer
+sw $ra, 0($sp)        # pushing value of $ra into stack
 # generating a random number for the platform - stored in $t4
 # representing horizontal  displacement from the left
 # width of display is 32 but don't want platform to be cut off (platform is 8 squares wide)
 # so the random number is between 0 and 23 (31-8)
+# then applying the displacement to the address $a2 and storing it in memory at address $a3
+# PARAMETER: $a2 stores the address to displace
+# PARAMETER: $a3 stores the address in memory to store the displaced address
+# note: uses $a0 and $a1
 li $v0, 42            # random number generator with given range
 li $a0, 0             # id of the random number generator
 li $a1, 23            # maximum value of random number produced
 syscall               # random number will be in $a0
 # then mutliply the random number by 4 so it is word aligned
-addi $t7, $zero, 4    # $t7 stores 4
-mult $a0, $t7         # multiply random number by 4 and stores in  lo (hi not used since numbers are small)
-mflo $t4              # store the random number from lo in $4
+addi $t0, $zero, 4    # $t0 stores 4
+mult $a0, $t0        # multiply random number by 4 and stores in  lo (hi not used since numbers are small)
+mflo $t1              # store the random number from lo in $t1
+add $t2, $a2, $t1     # add the random number to $a2 and store it in $t2
+sw $t2, 0($a3)        # store the displaced address in the specified address in memory 
 # jump out of function
-lw $ra, 0($sp)    # popping value of $ra out of stack 
-addi $sp, $sp, 4  # move pointer
-jr $ra            # exit out of function
-
+lw $ra, 0($sp)        # popping value of $ra out of stack 
+addi $sp, $sp, 4      # move pointer
+jr $ra                # exit out of function
 
 
 StartDrawDoodler:
@@ -159,7 +168,8 @@ addi $sp, $sp, -4              # moving pointer
 sw $ra, 0($sp)                 # pushing value of $ra into stack
 # stores start of doodler's location at beginning of game
 # doodler starts in the middle of the bottom platform
-lw, $t9, bottomPlatformLocation# t9 stores the address of bottom right corner of doodler
+la $t0, platformLocations      # address of where the bottom platform is stored________________________________________---
+lw, $t9, 0($t0)                # t9 stores the address of bottom right corner of doodler
 addi $t9, $t9, -116            # move up 1 row -128, then move right +12(3 units)
 sw $t9, doodlerLocation        # store the location of doodler in memory
 lw $a3, doodlerColour          # parameter for DrawDoodler
@@ -220,7 +230,7 @@ BounceUpFromBottom:
 addi $s1, $zero, 15       # doodler can move up 15 squares
 BounceUpFromBottomLoop:
 beq $zero, $s1, DropDown  # end loop once doodler moves up 15 squares
-jal Sleep                 # sleeps 
+jal Sleep                 # sleeps
 jal EraseDoodler          # erase the previous position of doodler
 lw $t4, 0xffff0000        # $t5 will be 1 if there is keyboard input
 beq $t4, 1, KeyboardInput # keyboard input detected
