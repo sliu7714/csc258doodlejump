@@ -292,16 +292,14 @@ BounceUpFromMiddle:
 jal FirstRedrawPlatform   # first 2 of the 11 need to be diff since generate new platform
 addi $s1, $zero, 9        # platforms move up 11- 2 (from FirstDrawPlatform) = 9 squares
 BounceUpFromMiddleLoop:
-beq $zero, $s1, Exit  # end loop once doodler moves up 15 squares
+beq $zero, $s1, DropDown  # end loop after 9 iterations
 jal  RedrawScreen         # redraw the platforms 1 square up
-#jal  BounceUp             # doodle move up 1 square w side movement             TODO CHANG______________________________________
-
-#jal CheckKeyboardInput
-#lw $a3, doodlerColour     # parameter for DrawDoodler
-#lw $a2, skyColour         # parameter for DrawDoodler
-#jal DrawDoodler           # redraw the doodler in row above
+jal EraseDoodler          # erase the previous doodler
+jal CheckKeyboardInput    # check for keyboard input for side movement
+lw $a3, doodlerColour     # parameter for DrawDoodler
+lw $a2, skyColour         # parameter for DrawDoodler
+jal DrawDoodler           # redraw the doodler in row above
 # AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-
 addi $s1, $s1, -1         # increment $t3
 j BounceUpFromMiddleLoop  # jump back to begining of loop
 #TODO update - change drop down to 2nd loop ------------------------------------------------------------------------------------------
@@ -345,10 +343,10 @@ addi $sp, $sp, -4     # moving pointer
 sw $ra, 0($sp)        # pushing value of $ra into stack
 # redraws the entire screem with platforms moved up 1 square
 jal StartDrawSky      # draw sky first
-# -----------------------------------------------------------------------------------
-#lw $a3, doodlerColour #  parameter for DrawDoodler
-#lw $a2, skyColour     #  parameter for DrawDoodler
-#jal DrawDoodler       #  redraw the doodler in row abov
+# -----------------------------------------------------------------------------------...fix flashness perhaps undraw then redraw?
+lw $a3, doodlerColour #  parameter for DrawDoodler
+lw $a2, skyColour     #  parameter for DrawDoodler
+jal DrawDoodler       #  redraw the doodler in row abov
 jal MovePlatformsUp   # draw each of the platform moved up
 # jump out of function
 lw $ra, 0($sp)        # popping value of $ra out of stack 
