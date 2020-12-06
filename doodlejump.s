@@ -128,7 +128,6 @@ sw $t7, 0($t9)                    # stores the platform colour into the corrispo
 addi $t9, $t9, 4                  # t9 = $t9 + 4 - incrementing to next square of platform (right)
 j DrawOnePlatform                 # jumps back to start of DisplayPlatform
 EndDrawOnePlatform:
-#addi $t9, $t9, -32                 # set $t9 back the leftmost square of current platform   --- TODO _________________ needed???________________
 lw $ra, 0($sp)                    # popping value of $ra out of stack 
 addi $sp, $sp, 4                  # move pointer
 jr $ra                            # exit out of function
@@ -159,7 +158,6 @@ lw $ra, 0($sp)        # popping value of $ra out of stack
 addi $sp, $sp, 4      # move pointer
 jr $ra                # exit out of function
 
-
 StartDrawSky:
 addi $sp, $sp, -4                  # moving pointer
 sw $ra, 0($sp)                     # pushing value of $ra into stack
@@ -175,9 +173,123 @@ sw $t7 0($t9)                      # stores the sky colour in the square with ad
 addi $t9, $t9, 4                   # incrementing to next square
 j DrawSkyLoop                      # jump back to start of DrawSky
 EndDrawSky:
+jal DrawScore                      # draw score
 lw $ra, 0($sp)                     # popping value of $ra out of stack 
 addi $sp, $sp, 4                   # move pointer
 jr $ra                             # exit out of function
+
+DrawScore:
+addi $sp, $sp, -4       # moving pointer
+sw $ra, 0($sp)          # pushing value of $ra into stack
+# draws the score -- to a max of 99
+lw $t8, score  		 # $t8 stores the score of the player
+lw $t0, displayAddress  # $t0 stores the address of the top left of display
+# find digits
+li $t1, 10              # $t1 store the number 10
+div $t8, $t1            # score/10 with tens digit in low and ones digit in hi
+mflo $t2             	 # $t2 stores the tens digit
+mfhi $t3                # $t3 stores the ones digit
+lw $a2, yellowColour    # $a2 parameter for drawing number -- colour
+# Draw 10s digit
+addi $a3, $t0, 96       # parameter for drawing number -- location
+			 # top left of the tens digit of the score
+beq $t2, 0, TensDraw0
+beq $t2, 1, TensDraw1
+beq $t2, 2, TensDraw2
+beq $t2, 3, TensDraw3
+beq $t2, 4, TensDraw4
+beq $t2, 5, TensDraw5
+beq $t2, 6, TensDraw6
+beq $t2, 7, TensDraw7
+beq $t2, 8, TensDraw8
+beq $t2, 9, TensDraw9
+# draw 1s digit
+DrawOnesDigit:
+addi $a3, $t0, 112      # parameter for drawing number -- location
+			 # top left of the ones digit of the score
+beq $t3, 0, OnesDraw0
+beq $t3, 1, OnesDraw1
+beq $t3, 2, OnesDraw2
+beq $t3, 3, OnesDraw3
+beq $t3, 4, OnesDraw4
+beq $t3, 5, OnesDraw5
+beq $t3, 6, OnesDraw6
+beq $t3, 7, OnesDraw7
+beq $t3, 8, OnesDraw8
+beq $t3, 9, OnesDraw9
+EndDrawScore:
+# jump out of function
+lw $ra, 0($sp)          # popping value of $ra out of stack 
+addi $sp, $sp, 4        # move pointer
+jr $ra                  # exit out of function
+
+
+# helpers for drawScore________________________________________________________________________
+# for jump and link to draw number functions
+TensDraw0:
+jal Draw0
+j DrawOnesDigit
+TensDraw1:
+jal Draw1
+j DrawOnesDigit
+TensDraw2:
+jal Draw2
+j DrawOnesDigit
+TensDraw3:
+jal Draw3
+j DrawOnesDigit
+TensDraw4:
+jal Draw4
+j DrawOnesDigit
+TensDraw5:
+jal Draw5
+j DrawOnesDigit
+TensDraw6:
+jal Draw6
+j DrawOnesDigit
+TensDraw7:
+jal Draw7
+j DrawOnesDigit
+TensDraw8:
+jal Draw8
+j DrawOnesDigit
+TensDraw9:
+jal Draw9
+j DrawOnesDigit
+
+# for jump and link to draw number functions
+OnesDraw0:
+jal Draw0
+j EndDrawScore
+OnesDraw1:
+jal Draw1
+j EndDrawScore
+OnesDraw2:
+jal Draw2
+j EndDrawScore
+OnesDraw3:
+jal Draw3
+j EndDrawScore
+OnesDraw4:
+jal Draw4
+j EndDrawScore
+OnesDraw5:
+jal Draw5
+j EndDrawScore
+OnesDraw6:
+jal Draw6
+j EndDrawScore
+OnesDraw7:
+jal Draw7
+j EndDrawScore
+OnesDraw8:
+jal Draw8
+j EndDrawScore
+OnesDraw9:
+jal Draw9
+j EndDrawScore
+# end of helpers for drawScore______________________________________________________________________
+
 
 StartDrawDoodler:
 addi $sp, $sp, -4              # moving pointer
@@ -297,6 +409,11 @@ BounceUpFromMiddle:
 # bounces up and moves platforms 
 # doodler can move up 15 squares
 # first move up 11 squares with platforms, then move remaining 4 with only doodler moving
+# also increments score
+lw $t2, score             # $t2 stores score of player
+addi $t2, $t2, 1          # increment score by 1
+sw $t2, score             # store score back
+# now go up
 jal FirstRedrawPlatform   # first 2 of the 11 need to be diff since generate new platform
 addi $s1, $zero, 9        # platforms move up 11- 2 (from FirstDrawPlatform) = 9 squares
 BounceUpFromMiddleLoop:
@@ -694,15 +811,15 @@ sw $ra, 0($sp)            # pushing value of $ra into stack
 # draws with the top left corner at $a3
 # PARAMETER: $a3 is the address in the display where the top left of the letter will sit
 # PARAMETER: $a2 is the colour of the letter to display
-sw $a2, 0($a3)
+sw $a2, 4($a3)
 
-sw $a2, 128($a3)
+sw $a2, 132($a3)
 
-sw $a2, 256($a3)
+sw $a2, 260($a3)
 
-sw $a2, 384($a3)
+sw $a2, 388($a3)
 
-sw $a2, 512($a3)
+sw $a2, 516($a3)
 # jumping out of function 
 lw $ra, 0($sp)            # popping value of $ra out of stack 
 addi $sp, $sp, 4          # move pointer
