@@ -585,7 +585,7 @@ addi $a3, $t0, 1888 # parameter for drawing letter - location of top left square
 jal DrawR
 
 #T
-addi $a3, $t0, 2568 # parameter for drawing letter - location of top left square
+addi $a3, $t0, 2564 # parameter for drawing letter - location of top left square
 jal DrawT
 #O
 addi $a3, $t0, 2580 # parameter for drawing letter - location of top left square
@@ -610,9 +610,9 @@ jal DrawA
 addi $a3, $t0, 2672 # parameter for drawing letter - location of top left square
 jal DrawY
 
-#S
+#E
 addi $a3, $t0, 3340 # parameter for drawing letter - location of top left square
-jal DrawS
+jal DrawE
 
 #T
 addi $a3, $t0, 3364 # parameter for drawing letter - location of top left square
@@ -650,13 +650,269 @@ addi $t5, $t5, -1         # increment $t5
 j CheckRestartLoop
 # input was detected
 CheckReplay:  
-beq $t4, 0x73, Presseds  # s was pressed -- Pressed s is defined in KeyboardInput- exits
+beq $t4, 0x65, Pressede  # e was pressed
 beq $t4, 0x72, Pressedr  # r was pressed
 Pressedr:  # replay
 j StartGame              # start game again
+Pressede:  # exit
+j Exit              # start game again
 
 
-# Functions for drawing letters and numbers
+# FUNCTIONS FOR DRAWING LETTERS AND NUMBERS________________________________________________________________________________________
+
+# NUMBERS______________________________________________________________________________
+Draw0:
+addi $sp, $sp, -4         # moving pointer
+sw $ra, 0($sp)            # pushing value of $ra into stack
+# draws with the top left corner at $a3
+# PARAMETER: $a3 is the address in the display where the top left of the letter will sit
+# PARAMETER: $a2 is the colour of the letter to display
+sw $a2, 0($a3)
+sw $a2, 4($a3)
+sw $a2, 8($a3)
+
+sw $a2, 128($a3)
+sw $a2, 136($a3)
+
+sw $a2, 256($a3)
+sw $a2, 264($a3)
+
+sw $a2, 384($a3)
+sw $a2, 392($a3)
+
+sw $a2, 512($a3)
+sw $a2, 516($a3)
+sw $a2, 520($a3)
+# jumping out of function 
+lw $ra, 0($sp)            # popping value of $ra out of stack 
+addi $sp, $sp, 4          # move pointer
+jr $ra                    # exit out of function
+
+Draw1:
+addi $sp, $sp, -4         # moving pointer
+sw $ra, 0($sp)            # pushing value of $ra into stack
+# draws with the top left corner at $a3
+# PARAMETER: $a3 is the address in the display where the top left of the letter will sit
+# PARAMETER: $a2 is the colour of the letter to display
+sw $a2, 0($a3)
+
+sw $a2, 128($a3)
+
+sw $a2, 256($a3)
+
+sw $a2, 384($a3)
+
+sw $a2, 512($a3)
+# jumping out of function 
+lw $ra, 0($sp)            # popping value of $ra out of stack 
+addi $sp, $sp, 4          # move pointer
+jr $ra                    # exit out of function
+
+Draw2:
+addi $sp, $sp, -4         # moving pointer
+sw $ra, 0($sp)            # pushing value of $ra into stack
+# draws with the top left corner at $a3
+# PARAMETER: $a3 is the address in the display where the top left of the letter will sit
+# PARAMETER: $a2 is the colour of the letter to display
+sw $a2, 0($a3)
+sw $a2, 4($a3)
+sw $a2, 8($a3)
+
+sw $a2, 136($a3)
+
+sw $a2, 256($a3)
+sw $a2, 260($a3)
+sw $a2, 264($a3)
+
+sw $a2, 384($a3)
+
+sw $a2, 512($a3)
+sw $a2, 516($a3)
+sw $a2, 520($a3)
+# jumping out of function 
+lw $ra, 0($sp)            # popping value of $ra out of stack 
+addi $sp, $sp, 4          # move pointer
+jr $ra                    # exit out of function
+
+Draw3:
+addi $sp, $sp, -4         # moving pointer
+sw $ra, 0($sp)            # pushing value of $ra into stack
+# draws with the top left corner at $a3
+# PARAMETER: $a3 is the address in the display where the top left of the letter will sit
+# PARAMETER: $a2 is the colour of the letter to display
+sw $a2, 0($a3)
+sw $a2, 4($a3)
+sw $a2, 8($a3)
+
+sw $a2, 136($a3)
+
+sw $a2, 256($a3)
+sw $a2, 260($a3)
+sw $a2, 264($a3)
+
+sw $a2, 392($a3)
+
+sw $a2, 512($a3)
+sw $a2, 516($a3)
+sw $a2, 520($a3)
+# jumping out of function 
+lw $ra, 0($sp)            # popping value of $ra out of stack 
+addi $sp, $sp, 4          # move pointer
+jr $ra                    # exit out of function
+
+Draw4:
+addi $sp, $sp, -4         # moving pointer
+sw $ra, 0($sp)            # pushing value of $ra into stack
+# draws with the top left corner at $a3
+# PARAMETER: $a3 is the address in the display where the top left of the letter will sit
+# PARAMETER: $a2 is the colour of the letter to display
+sw $a2, 0($a3)
+sw $a2, 8($a3)
+
+sw $a2, 128($a3)
+sw $a2, 136($a3)
+
+sw $a2, 256($a3)
+sw $a2, 260($a3)
+sw $a2, 264($a3)
+
+sw $a2, 392($a3)
+
+sw $a2, 520($a3)
+# jumping out of function 
+lw $ra, 0($sp)            # popping value of $ra out of stack 
+addi $sp, $sp, 4          # move pointer
+jr $ra                    # exit out of function
+
+Draw5:
+addi $sp, $sp, -4         # moving pointer
+sw $ra, 0($sp)            # pushing value of $ra into stack
+# draws with the top left corner at $a3
+# PARAMETER: $a3 is the address in the display where the top left of the letter will sit
+# PARAMETER: $a2 is the colour of the letter to display
+sw $a2, 0($a3)
+sw $a2, 4($a3)
+sw $a2, 8($a3)
+
+sw $a2, 128($a3)
+
+sw $a2, 256($a3)
+sw $a2, 260($a3)
+sw $a2, 264($a3)
+
+sw $a2, 392($a3)
+
+sw $a2, 512($a3)
+sw $a2, 516($a3)
+sw $a2, 520($a3)
+# jumping out of function 
+lw $ra, 0($sp)            # popping value of $ra out of stack 
+addi $sp, $sp, 4          # move pointer
+jr $ra                    # exit out of function
+
+Draw6:
+addi $sp, $sp, -4         # moving pointer
+sw $ra, 0($sp)            # pushing value of $ra into stack
+# draws with the top left corner at $a3
+# PARAMETER: $a3 is the address in the display where the top left of the letter will sit
+# PARAMETER: $a2 is the colour of the letter to display
+sw $a2, 0($a3)
+sw $a2, 4($a3)
+sw $a2, 8($a3)
+
+sw $a2, 128($a3)
+
+sw $a2, 256($a3)
+sw $a2, 260($a3)
+sw $a2, 264($a3)
+
+sw $a2, 384($a3)
+sw $a2, 392($a3)
+
+sw $a2, 512($a3)
+sw $a2, 516($a3)
+sw $a2, 520($a3)
+# jumping out of function 
+lw $ra, 0($sp)            # popping value of $ra out of stack 
+addi $sp, $sp, 4          # move pointer
+jr $ra                    # exit out of function
+
+Draw7:
+addi $sp, $sp, -4         # moving pointer
+sw $ra, 0($sp)            # pushing value of $ra into stack
+# draws with the top left corner at $a3
+# PARAMETER: $a3 is the address in the display where the top left of the letter will sit
+# PARAMETER: $a2 is the colour of the letter to display
+sw $a2, 0($a3)
+sw $a2, 4($a3)
+sw $a2, 8($a3)
+
+sw $a2, 136($a3)
+
+sw $a2, 264($a3)
+
+sw $a2, 392($a3)
+
+sw $a2, 520($a3)
+# jumping out of function 
+lw $ra, 0($sp)            # popping value of $ra out of stack 
+addi $sp, $sp, 4          # move pointer
+jr $ra                    # exit out of function
+
+Draw8:
+addi $sp, $sp, -4         # moving pointer
+sw $ra, 0($sp)            # pushing value of $ra into stack
+# draws with the top left corner at $a3
+# PARAMETER: $a3 is the address in the display where the top left of the letter will sit
+# PARAMETER: $a2 is the colour of the letter to display
+sw $a2, 0($a3)
+sw $a2, 4($a3)
+sw $a2, 8($a3)
+
+sw $a2, 128($a3)
+sw $a2, 136($a3)
+
+sw $a2, 256($a3)
+sw $a2, 260($a3)
+sw $a2, 264($a3)
+
+sw $a2, 384($a3)
+sw $a2, 392($a3)
+
+sw $a2, 512($a3)
+sw $a2, 516($a3)
+sw $a2, 520($a3)
+# jumping out of function 
+lw $ra, 0($sp)            # popping value of $ra out of stack 
+addi $sp, $sp, 4          # move pointer
+jr $ra                    # exit out of function
+
+Draw9:
+addi $sp, $sp, -4         # moving pointer
+sw $ra, 0($sp)            # pushing value of $ra into stack
+# draws with the top left corner at $a3
+# PARAMETER: $a3 is the address in the display where the top left of the letter will sit
+# PARAMETER: $a2 is the colour of the letter to display
+sw $a2, 0($a3)
+sw $a2, 4($a3)
+sw $a2, 8($a3)
+
+sw $a2, 128($a3)
+sw $a2, 136($a3)
+
+sw $a2, 256($a3)
+sw $a2, 260($a3)
+sw $a2, 264($a3)
+
+sw $a2, 392($a3)
+
+sw $a2, 520($a3)
+# jumping out of function 
+lw $ra, 0($sp)            # popping value of $ra out of stack 
+addi $sp, $sp, 4          # move pointer
+jr $ra                    # exit out of function
+
+# LETTERS ____________________________________________________________________________
 DrawP:
 addi $sp, $sp, -4         # moving pointer
 sw $ra, 0($sp)            # pushing value of $ra into stack
