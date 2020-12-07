@@ -464,14 +464,15 @@ lw $t9, doodlerLocation       # $t9 stores the location of the doodler
 lw $t0, displayAddress        # $t0 stores the address of the top left square of the display
 addi $s1, $t0, 4092           # $s1 stores the bottom right square of the display
 lw $s2, sleepAmount           # $s2 stores the initial amount to sleep -- increases doodle gets higher
-#addi $s2, $s2, 92             
+addi $s2, $s2, 110             
 li $s3, 0                     # $s3 stores the amount to add to sleep
 DropDownLoop:
 bgt $t9, $s1, Restart         # stops game if doodler drops below the screen
 li $v0, 32        	       # command for sleep
-add $s2, $s2, $s3             # add to sleep increment amount
+sub $s2, $s2, $s3             # add to sleep increment amount
 addi $s3, $s3, 1              # increment sleep increment amount
-addi $a0, $s2, 0              # sleep for specified millisecconds in $a0
+addi $a0, $s2, 0             # sleep for specified millisecconds in $a0
+#li $a0, 25 #TEST
 syscall                       # sleeps 
 # HERE )____________________________________________________________________________________________________________
 jal EraseDoodler              # erase the previous position of doodler
@@ -593,10 +594,14 @@ sw $t2, score             # store score back
 # now go up
 jal FirstRedrawPlatform   # first 2 of the 11 need to be diff since generate new platform
 addi $s1, $zero, 9        # platforms move up 11- 2 (from FirstDrawPlatform) = 9 squares
+lw $s2, sleepAmount       # $s2 stores the initial amount to sleep -- increases doodle gets higher
+li $s3, 0                 # $s3 stores the amount to add to sleep
 BounceUpFromMiddleLoop:
 beq $zero, $s1, DropDown  # end loop after 9 iterations
 li $v0, 32        	   # command for sleep
-li $a0, 35                # sleep for specified millisecconds
+add $s2, $s2, $s3         # add to sleep increment amount
+addi $s3, $s3, 1          # increment sleep increment amount
+addi $a0, $s2, 0          # sleep for specified millisecconds in $a0    
 syscall                   
 jal RedrawScreen          # redraw the platforms 1 square up
 jal EraseDoodler          # erase the previous doodler
@@ -679,8 +684,8 @@ BounceUpFromBottom:
 # bounces up without moving platforms.
 # doodler can move up 15 squares
 addi $s1, $zero, 15       # doodler can move up 15 squares
-lw $s2, sleepAmount           # $s2 stores the initial amount to sleep -- increases doodle gets higher
-li $s3, 0                     # $s3 stores the amount to add to slee
+lw $s2, sleepAmount       # $s2 stores the initial amount to sleep -- increases doodle gets higher
+li $s3, 0                 # $s3 stores the amount to add to sleep
 BounceUpFromBottomLoop:
 beq $zero, $s1, DropDown  # end loop once doodler moves up 15 squares
 jal BounceUp              # doodler move up 1 square w side movement
