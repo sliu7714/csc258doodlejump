@@ -109,6 +109,7 @@ sw $t4, 0($t5)                  # store letter at place in array
 addi $t5, $t5, 4                # increase $t5- address in playerName array
 j InputNameLoop                 # jump back to loop
 
+
 # helper for drawing player name
 DrawPlayerNameLetter:
 addi $sp, $sp, -4               # moving pointer
@@ -119,29 +120,29 @@ lw $t8, 0($t5)                  # ascii code of letter
 beq $t8, 0x61, NameA
 beq $t8, 0x62, NameB
 beq $t8, 0x63, NameC
-beq $t4, 0x64, NameD
-beq $t4, 0x65, NameE
-beq $t4, 0x66, NameF
-beq $t4, 0x67, NameG
-beq $t4, 0x68, NameH
-beq $t4, 0x69, NameI
-beq $t4, 0x6A, NameJ
-beq $t4, 0x6B, NameK
-beq $t4, 0x6C, NameL
-beq $t4, 0x6E, NameM
-beq $t4, 0x6D, NameN
-beq $t4, 0x6F, NameO
-beq $t4, 0x70, NameP
-beq $t4, 0x71, NameQ
-beq $t4, 0x72, NameR
-beq $t4, 0x73, NameS
-beq $t4, 0x74, NameT
-beq $t4, 0x75, NameU
-beq $t4, 0x76, NameV
-beq $t4, 0x77, NameW
-beq $t4, 0x78, NameX
-beq $t4, 0x79, NameY
-beq $t4, 0x7A, NameZ
+beq $t8, 0x64, NameD
+beq $t8, 0x65, NameE
+beq $t8, 0x66, NameF
+beq $t8, 0x67, NameG
+beq $t8, 0x68, NameH
+beq $t8, 0x69, NameI
+beq $t8, 0x6A, NameJ
+beq $t8, 0x6B, NameK
+beq $t8, 0x6C, NameL
+beq $t8, 0x6E, NameM
+beq $t8, 0x6D, NameN
+beq $t8, 0x6F, NameO
+beq $t8, 0x70, NameP
+beq $t8, 0x71, NameQ
+beq $t8, 0x72, NameR
+beq $t8, 0x73, NameS
+beq $t8, 0x74, NameT
+beq $t8, 0x75, NameU
+beq $t8, 0x76, NameV
+beq $t8, 0x77, NameW
+beq $t8, 0x78, NameX
+beq $t8, 0x79, NameY
+beq $t8, 0x7A, NameZ
 j EndDrawPlayerNameLetter       # if none of those letters, just jump back to loop
 NameA:
 jal DrawA                       # draw letter
@@ -1136,6 +1137,10 @@ Pressedr:  # replay
 j StartGame              # start game again
 Pressede:  # exit
 j Exit              # start game again
+
+
+
+
 
 
 # FUNCTIONS FOR DRAWING LETTERS AND NUMBERS________________________________________________________________________________________
