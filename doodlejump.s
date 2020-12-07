@@ -83,6 +83,22 @@ jal StartDrawSky
 lw $t0, displayAddress          # $t0 stores the base address for display
 
 # now draw letters, for all the letter cals $a2 is colour
+# draw score
+lw $a2, yellowColour    
+addi $a3, $t0, 132
+jal DrawS
+addi $a3, $t0, 148 
+jal DrawC
+addi $a3, $t0, 164
+jal DrawO
+addi $a3, $t0, 180
+jal DrawR
+addi $a3, $t0, 196
+jal DrawE
+addi $a3, $t0, 212
+jal DrawCol
+
+# draw bottom message
 lw $a2, blueColour
 
 # P 
@@ -287,7 +303,6 @@ lw $a2, yellowColour    # $a2 parameter for drawing number -- colour
 # Draw 10s digit
 addi $a3, $t0, 224      # parameter for drawing number -- location
 			 # top left of the tens digit of the score
-beq $t2, 0, TensDraw0
 beq $t2, 1, TensDraw1
 beq $t2, 2, TensDraw2
 beq $t2, 3, TensDraw3
@@ -1497,6 +1512,20 @@ lw $ra, 0($sp)            # popping value of $ra out of stack
 addi $sp, $sp, 4          # move pointer
 jr $ra                    # exit out of function
 
+DrawCol:
+addi $sp, $sp, -4         # moving pointer
+sw $ra, 0($sp)            # pushing value of $ra into stack
+# draws :  with the top left corner at $a3
+# PARAMETER: $a3 is the address in the display where the top left of the letter will sit
+# PARAMETER: $a2 is the colour of the letter to display
+sw $a2, 128($a3)
+sw $a2, 384($a3)
+# jumping out of function 
+lw $ra, 0($sp)            # popping value of $ra out of stack 
+addi $sp, $sp, 4          # move pointer
+jr $ra                    # exit out of function
+
+
 DrawU:
 addi $sp, $sp, -4         # moving pointer
 sw $ra, 0($sp)            # pushing value of $ra into stack
@@ -1514,6 +1543,30 @@ sw $a2, 264($a3)
 
 sw $a2, 384($a3)
 sw $a2, 392($a3)
+
+sw $a2, 512($a3)
+sw $a2, 516($a3)
+sw $a2, 520($a3)
+# jumping out of function 
+lw $ra, 0($sp)            # popping value of $ra out of stack 
+addi $sp, $sp, 4          # move pointer
+jr $ra                    # exit out of function
+
+DrawC:
+addi $sp, $sp, -4         # moving pointer
+sw $ra, 0($sp)            # pushing value of $ra into stack
+# draws C with the top left corner at $a3
+# PARAMETER: $a3 is the address in the display where the top left of the letter will sit
+# PARAMETER: $a2 is the colour of the letter to display
+sw $a2, 0($a3)
+sw $a2, 4($a3)
+sw $a2, 8($a3)
+
+sw $a2, 128($a3)
+
+sw $a2, 256($a3)
+
+sw $a2, 384($a3)
 
 sw $a2, 512($a3)
 sw $a2, 516($a3)
