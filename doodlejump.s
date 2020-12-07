@@ -15,24 +15,21 @@
 #
 # Which milestone is reached in this submission?
 # (See the assignment handout for descriptions of the milestones)
-# - Milestone 3
+# - Milestone 4
 #
 # Which approved additional features have been implemented?
 # (See the assignment handout for the list of additional features)
-# 1. (fill in the feature, if any)
-# 2. (fill in the feature, if any)
-# 3. (fill in the feature, if any)
-# ... (add more if necessary)
+# 1. e) Dynamic on-Screen notifications
+# 2. a) Realistic Physics- jump is faster at start then slows at peak then falls similarly
+# 3. 
 #
-# Any additional information that the TA needs to know:\
+# Any additional information that the TA needs to know:
+# = To start press s, the score is in the top right
+# - After every 5 score points WOW! drawn
+# - After every 10 points SUPER! is drawn in rainbow
 # - After the losing the game press r to restart and s to exit the game, if nothing is pressed after 1 minute , the game ends
 #
 #####################################################################
-
-# notes: deletelater
-# - for some reason if mars is open for a long time the redrawing is pretty slow but restarting mars seems to fix it 
-# - be careful address vs values at addresses
-# - careful to not overrride things that are inportaint
 
 .data
 displayAddress: .word 0x10008000   # the address of the top left corner of the bitmap display
@@ -47,6 +44,7 @@ greenColour:    .word 0x19b869     # a green colour
 redColour:      .word 0xf5391A     # a red colour
 purpleColour:   .word 0xd45aff     # a purple colour
 score:          .word 0            # the score of the player
+sleepAmount:    .word 10           # miliseconds to sleep
 
 platformLocations: .word 0:3       # array of size 3 to store the locations of the platforms
                                    # first is bottom then middle then top
@@ -465,9 +463,17 @@ jal DrawScoreMessage          # checks score and displays message if it meets co
 lw $t9, doodlerLocation       # $t9 stores the location of the doodler
 lw $t0, displayAddress        # $t0 stores the address of the top left square of the display
 addi $s1, $t0, 4092           # $s1 stores the bottom right square of the display
+lw $s2, sleepAmount           # $s2 stores the initial amount to sleep -- increases doodle gets higher
+#addi $s2, $s2, 92             
+li $s3, 0                     # $s3 stores the amount to add to sleep
 DropDownLoop:
 bgt $t9, $s1, Restart         # stops game if doodler drops below the screen
-jal Sleep                     # sleeps 
+li $v0, 32        	       # command for sleep
+add $s2, $s2, $s3             # add to sleep increment amount
+addi $s3, $s3, 1              # increment sleep increment amount
+addi $a0, $s2, 0              # sleep for specified millisecconds in $a0
+syscall                       # sleeps 
+# HERE )____________________________________________________________________________________________________________
 jal EraseDoodler              # erase the previous position of doodler
 lw $t4, 0xffff0000            # $t5 will be 1 if there is keyboard input
 beq $t4, 1, CheckKeyboardInput# keyboard input detected
@@ -589,7 +595,9 @@ jal FirstRedrawPlatform   # first 2 of the 11 need to be diff since generate new
 addi $s1, $zero, 9        # platforms move up 11- 2 (from FirstDrawPlatform) = 9 squares
 BounceUpFromMiddleLoop:
 beq $zero, $s1, DropDown  # end loop after 9 iterations
-jal Sleep                 # sleep
+li $v0, 32        	   # command for sleep
+li $a0, 35                # sleep for specified millisecconds
+syscall                   
 jal RedrawScreen          # redraw the platforms 1 square up
 jal EraseDoodler          # erase the previous doodler
 jal CheckKeyboardInput    # check for keyboard input for side movement
@@ -671,6 +679,8 @@ BounceUpFromBottom:
 # bounces up without moving platforms.
 # doodler can move up 15 squares
 addi $s1, $zero, 15       # doodler can move up 15 squares
+lw $s2, sleepAmount           # $s2 stores the initial amount to sleep -- increases doodle gets higher
+li $s3, 0                     # $s3 stores the amount to add to slee
 BounceUpFromBottomLoop:
 beq $zero, $s1, DropDown  # end loop once doodler moves up 15 squares
 jal BounceUp              # doodler move up 1 square w side movement
@@ -682,7 +692,11 @@ BounceUp:
 addi $sp, $sp, -4         # moving pointer
 sw $ra, 0($sp)            # pushing value of $ra into stack
 # allow doodler to move up 1 square with side movement too
-jal Sleep                 # sleeps
+li $v0, 32        	   # command for sleep
+add $s2, $s2, $s3         # add to sleep increment amount
+addi $s3, $s3, 1          # increment sleep increment amount
+addi $a0, $s2, 0          # sleep for specified millisecconds in $a0
+syscall                    
 jal EraseDoodler          # erase the previous position of doodler
 jal CheckKeyboardInput    # check for keyboard input
 addi $a1, $zero, -128     # parameter for MoveDoodler
@@ -768,7 +782,6 @@ j EndCheckKeyboardInput  # exit out of function
 
 
 Restart:
-#TODO:---display game over msg___________________________________________________________________________________________________
 #______________________________game over message__________________________________________________________________________________
 jal StartDrawSky
 lw $t7, greyColour     # the colour of the game over message
