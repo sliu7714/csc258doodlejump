@@ -7,7 +7,7 @@
 # Student: Siyuan (Kate) Liu, 1005734341
 #
 # Bitmap Display Configuration:
-# - Unit width in pixels: 8
+# - Unit width in pixels: 8 
 # - Unit height in pixels: 8
 # - Display width in pixels: 256
 # - Display height in pixels: 256
@@ -21,7 +21,7 @@
 # (See the assignment handout for the list of additional features)
 # 1. e) Dynamic on-Screen notifications
 # 2. a) Realistic Physics- jump is faster at start then slows at peak then falls similarly
-# 3. 
+# 3. g) Player names
 #
 # Any additional information that the TA needs to know:
 # = To start press s, the score is in the top right
@@ -72,7 +72,7 @@ addi $t3, $zero, -252
 sw $t3, 16($t9)                # chest -- up 2 rows (-256), right 1 (+4)
 addi $t3, $zero, -248
 sw $t3, 20($t9)                # left arm -- up 2 rows (-256), right 2 (+8)
-addi $t3, $zero, -380
+addi $t3, $zero, -380 
 sw $t3, 24($t9)                # head -- 3 rows up (-384), 1 right (+$)
 
 WelcomeScreen:# WELCOME MESSAGE _____________________________________________________________
@@ -90,7 +90,7 @@ jal DrawC
 addi $a3, $t0, 164
 jal DrawO
 addi $a3, $t0, 180
-jal DrawR
+jal DrawR 
 addi $a3, $t0, 196
 jal DrawE
 addi $a3, $t0, 212
@@ -463,14 +463,15 @@ jal DrawScoreMessage          # checks score and displays message if it meets co
 lw $t9, doodlerLocation       # $t9 stores the location of the doodler
 lw $t0, displayAddress        # $t0 stores the address of the top left square of the display
 addi $s1, $t0, 4092           # $s1 stores the bottom right square of the display
-lw $s2, sleepAmount           # $s2 stores the initial amount to sleep -- increases doodle gets higher
-addi $s2, $s2, 110             
+lw $s2, sleepAmount           # $s2 stores the initial amount to sleep -- increases as doodle gets lower until a terminal velocity
+lw $s4, sleepAmount           # for terminal velocity
+addi $s2, $s2, 110            
 li $s3, 0                     # $s3 stores the amount to add to sleep
 DropDownLoop:
 bgt $t9, $s1, Restart         # stops game if doodler drops below the screen
 li $v0, 32        	       # command for sleep
-sub $s2, $s2, $s3             # add to sleep increment amount
-addi $s3, $s3, 1              # increment sleep increment amount
+bge $s2, $s4, IncreaseSpeed   # decrease sleep amount if above terminal velocity
+BackToDropDownLoop:
 addi $a0, $s2, 0             # sleep for specified millisecconds in $a0
 #li $a0, 25 #TEST
 syscall                       # sleeps 
@@ -484,6 +485,12 @@ jal MoveDoodler               # moves the doodler down by 1 square
 lw $t9, doodlerLocation       # load updated doodler location
 j DropDownLoop                # jump back to begining of loop
 
+IncreaseSpeed:
+# decreses sleep amount 
+# helper for DropDown
+sub $s2, $s2, $s3             # add to sleep increment amount
+addi $s3, $s3, 1              # increment sleep increment amount
+j BackToDropDownLoop
 
 DrawScoreMessage:
 addi $sp, $sp, -4                 # moving pointer
