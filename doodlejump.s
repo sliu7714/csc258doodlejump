@@ -41,7 +41,11 @@ platformColour: .word 0x91c078     # a green colour for the platforms
 doodlerColour:  .word 0xc7bfec     # a purple colour for the doodler 
 greyColour:     .word 0xa3a3a3     # a grey colour
 yellowColour:   .word 0xefc050     # a yellow colour
-
+blueColour:     .word 0x01cdfe     # a blue colour
+orangeColour:   .word 0xf37735     # a orange colour
+greenColour:    .word 0x19b869     # a green colour
+redColour:      .word 0xf5391A     # a red colour
+purpleColour:   .word 0xd45aff     # a purple colour
 score:          .word 0            # the score of the player
 
 platformLocations: .word 0:3       # array of size 3 to store the locations of the platforms
@@ -55,7 +59,6 @@ doodlerFigureArray:    .word 0:7   # array of size 7 with the displacements for 
 .text
 
 Main: 
-
 # Initializes the doodlerFigureArray with the different displacements for the different parts of the doodler
 # order is left to right then bottom to up 
 la $t9, doodlerFigureArray    # $t9 stores the address of the first item in the array
@@ -74,7 +77,81 @@ sw $t3, 20($t9)                # left arm -- up 2 rows (-256), right 2 (+8)
 addi $t3, $zero, -380
 sw $t3, 24($t9)                # head -- 3 rows up (-384), 1 right (+$)
 
+WelcomeScreen:# WELCOME MESSAGE _____________________________________________________________
+#displays message to screen and allows player to press s to start, waits 1 min before starting
+jal StartDrawSky 
+lw $t0, displayAddress          # $t0 stores the base address for display
 
+# now draw letters, for all the letter cals $a2 is colour
+lw $a2, blueColour
+
+# P 
+addi $a3, $t0, 1804 # parameter for drawing letter - location of top left square
+jal DrawP
+#R
+addi $a3, $t0, 1820 # parameter for drawing letter - location of top left square
+jal DrawR
+#E
+addi $a3, $t0, 1836 # parameter for drawing letter - location of top left square
+jal DrawE
+#S
+addi $a3, $t0, 1848 # parameter for drawing letter - location of top left square
+jal DrawS
+#S
+addi $a3, $t0, 1864 # parameter for drawing letter - location of top left square
+jal DrawS
+
+#S
+addi $a3, $t0, 1888 # parameter for drawing letter - location of top left square
+jal DrawS
+
+#T
+addi $a3, $t0, 2564 # parameter for drawing letter - location of top left square
+jal DrawT
+#O
+addi $a3, $t0, 2580 # parameter for drawing letter - location of top left square
+jal DrawO
+
+#S
+addi $a3, $t0, 2600 # parameter for drawing letter - location of top left square
+jal DrawS
+#T
+addi $a3, $t0, 2616 # parameter for drawing letter - location of top left square
+jal DrawT
+#A
+addi $a3, $t0, 2632 # parameter for drawing letter - location of top left square
+jal DrawA
+# R
+addi $a3, $t0, 2648 # parameter for drawing letter - location of top left square
+jal DrawR
+# T
+addi $a3, $t0, 2664 # parameter for drawing letter - location of top left square
+jal DrawT
+# !
+addi $a3, $t0, 2680 # parameter for drawing letter - location of top left square
+jal DrawEx
+
+# check for input
+li $t5 60
+CheckStartLoop:          # loop that waits for user input to exit or restart
+beq $t5, $zero, StartGame # if nothing was pressed after a minute, game ends.
+# checks for keyboard input
+lw $t4, 0xffff0000        # $t4 will be 1 if there is keyboard input
+beq $t4, 1, CheckStart    # keyboard input detected
+# sleeps for 1 sec
+li $v0, 32                # command for sleep
+li $a0, 1000              # sleep for specified millisecconds
+syscall
+addi $t5, $t5, -1         # increment $t5
+j CheckStartLoop
+# input was detected
+CheckStart:  
+lw $t4, 0xffff0004       # the ASCII value of the key that was pressed
+beq $t4, 0x73, Presseds  # s was pressed
+j CheckRestartLoop       # if non-valid input just go back
+Presseds:  # start game
+j StartGame              # start game 
+# END WELCOME MESSAGE _____________________________________________________________
 
 StartGame: 
 sw $zero, score    # set score to 0 
@@ -95,7 +172,24 @@ sw $t3, 8($t9)                    # store location of bottom platform row
 StartDrawPlatforms:
 # Drawing the 3 platforms at the start of game
 jal StartDrawSky                     # first draw the sky
+# draws START! to top left of screen
 lw $t0, displayAddress               # $t0 stores the base address for display
+# $a2 parameter of drawing letter methods - colour
+# $a3 parameter of drawing letter methods location of top left
+lw $a2,blueColour    
+addi $a3, $t0, 132
+jal DrawS
+addi $a3, $t0, 148 
+jal DrawT
+addi $a3, $t0, 164
+jal DrawA
+addi $a3, $t0, 180
+jal DrawR
+addi $a3, $t0, 196
+jal DrawT
+addi $a3, $t0, 212
+jal DrawEx
+# draw platforms
 la $s7, platformLocations            # $s7 stores the address of the array with platform locations - bottom first
 addi $s6, $s7, 12                    # $s6 stores the address of the last location in the platformLocations array
 StartDrawPlatformsLoop:
@@ -191,7 +285,7 @@ mflo $t2             	 # $t2 stores the tens digit
 mfhi $t3                # $t3 stores the ones digit
 lw $a2, yellowColour    # $a2 parameter for drawing number -- colour
 # Draw 10s digit
-addi $a3, $t0, 96       # parameter for drawing number -- location
+addi $a3, $t0, 224      # parameter for drawing number -- location
 			 # top left of the tens digit of the score
 beq $t2, 0, TensDraw0
 beq $t2, 1, TensDraw1
@@ -205,7 +299,7 @@ beq $t2, 8, TensDraw8
 beq $t2, 9, TensDraw9
 # draw 1s digit
 DrawOnesDigit:
-addi $a3, $t0, 112      # parameter for drawing number -- location
+addi $a3, $t0, 240      # parameter for drawing number -- location
 			 # top left of the ones digit of the score
 beq $t3, 0, OnesDraw0
 beq $t3, 1, OnesDraw1
@@ -352,6 +446,7 @@ jr $ra                           # exit out of function
 DropDown:
 # makes doodler fall
 # exits if doodler falls below platform
+jal DrawScoreMessage          # checks score and displays message if it meets conditions
 lw $t9, doodlerLocation       # $t9 stores the location of the doodler
 lw $t0, displayAddress        # $t0 stores the address of the top left square of the display
 addi $s1, $t0, 4092           # $s1 stores the bottom right square of the display
@@ -366,6 +461,67 @@ addi $a1, $zero, 128          # parameter for MoveDoodler
 jal MoveDoodler               # moves the doodler down by 1 square
 lw $t9, doodlerLocation       # load updated doodler location
 j DropDownLoop                # jump back to begining of loop
+
+
+DrawScoreMessage:
+addi $sp, $sp, -4                 # moving pointer
+sw $ra, 0($sp)                    # pushing value of $ra into stack
+# draws WOW! after every 5 points, SUPER! after every 10
+lw $t1, score                      # $t1 stores score
+beq $t1, $zero EndDrawScoreMessage # nothing drawn if score is 0
+li, $t5, 10                        # $t5 stores 10
+div $t1, $t5                       # hi stores remainder of score/10
+mfhi $t2                           # $t2 is remainder
+beq $t2, $zero, DrawSUPER          # draws message if score is multiple of 10
+li, $t5, 5                         # $t5 stores 5
+div $t1, $t5                       # hi stores remainder of score/5
+mfhi $t2                           # $t2 is remainder
+beq $t2, $zero, DrawWOW            # draws message if score is multiple of 1
+EndDrawScoreMessage:
+lw $ra, 0($sp)                     # popping value of $ra out of stack 
+addi $sp, $sp, 4                   # move pointer
+jr $ra                             # exit out of function
+
+DrawWOW:
+# draws WOW! to top left of screen
+lw $t0, displayAddress  # $t0 stores top left of display
+# $a2 parameter of drawing letter methods - colour
+# $a3 parameter of drawing letter methods location of top left
+lw $a2,blueColour    
+addi $a3, $t0, 136
+jal DrawW
+addi $a3, $t0, 160
+jal DrawO
+addi $a3, $t0, 176
+jal DrawW
+addi $a3, $t0, 200
+jal DrawEx
+j EndDrawScoreMessage
+
+DrawSUPER:
+# draws SUPER! to top left of screenin rainbow colours
+lw $t0, displayAddress  # $t0 stores top left of display
+# $a2 parameter of drawing letter methods - colour
+# $a3 parameter of drawing letter methods location of top left
+lw $a2,redColour     
+addi $a3, $t0, 132
+jal DrawS
+lw $a2,orangeColour     
+addi $a3, $t0, 148
+jal DrawU
+lw $a2,yellowColour    
+addi $a3, $t0, 164
+jal DrawP
+lw $a2, greenColour    
+addi $a3, $t0, 180
+jal DrawE
+lw $a2,blueColour     
+addi $a3, $t0, 192
+jal DrawR
+lw $a2,purpleColour     
+addi $a3, $t0, 208
+jal DrawEx
+j EndDrawScoreMessage
 
 CheckPlatform:
 addi $sp, $sp, -4                   # moving pointer
@@ -582,7 +738,6 @@ KeyboardInput:
 lw $t4, 0xffff0004       # the ASCII value of the key that was pressed
 beq $t4, 0x6A, Pressedj  # j was pressed
 beq $t4, 0x6B, Pressedk  # k was pressed
-beq $t4, 0x73, Presseds  # s was pressed
 j EndCheckKeyboardInput  # jump out of function if any other key pressed
 Pressedj:   # move to left
 lw $t9 doodlerLocation   # $t9 stores the location of the doodler
@@ -594,14 +749,13 @@ lw $t9 doodlerLocation   # $t9 stores the location of the doodler
 addi $t9, $t9, 4         # add 4 (move right one square) to location
 sw $t9, doodlerLocation  # store location back into doodlerLocation
 j EndCheckKeyboardInput  # exit out of function
-Presseds:   # exit 
-j Exit                   # exit program
 
 
 
 Restart:
 #TODO:---display game over msg___________________________________________________________________________________________________
 #______________________________game over message__________________________________________________________________________________
+jal StartDrawSky
 lw $t7, greyColour     # the colour of the game over message
 lw $t0, displayAddress # the address of the top left of the display
 # skull one row at a time 
@@ -757,7 +911,7 @@ li $t5 60
 CheckRestartLoop:         # loop that waits for user input to exit or restart
 beq $t5, $zero, Exit      # if nothing was pressed after a minute, game ends.
 # checks for keyboard input
-lw $t4, 0xffff0000        # $t5 will be 1 if there is keyboard input
+lw $t4, 0xffff0000        # $t4 will be 1 if there is keyboard input
 beq $t4, 1, CheckReplay   # keyboard input detected
 # sleeps for 1 sec
 li $v0, 32                # command for sleep
@@ -767,8 +921,10 @@ addi $t5, $t5, -1         # increment $t5
 j CheckRestartLoop
 # input was detected
 CheckReplay:  
+lw $t4, 0xffff0004       # the ASCII value of the key that was pressed
 beq $t4, 0x65, Pressede  # e was pressed
 beq $t4, 0x72, Pressedr  # r was pressed
+j CheckRestartLoop       # if non-valid input just go back
 Pressedr:  # replay
 j StartGame              # start game again
 Pressede:  # exit
@@ -1296,7 +1452,79 @@ lw $ra, 0($sp)            # popping value of $ra out of stack
 addi $sp, $sp, 4          # move pointer
 jr $ra                    # exit out of function
 
+DrawW:
+addi $sp, $sp, -4         # moving pointer
+sw $ra, 0($sp)            # pushing value of $ra into stack
+# draws with the top left corner at $a3
+# PARAMETER: $a3 is the address in the display where the top left of the letter will sit
+# PARAMETER: $a2 is the colour of the letter to display
+sw $a2, 0($a3)
+sw $a2, 16($a3)
+
+sw $a2, 128($a3)
+sw $a2, 144($a3)
+
+sw $a2, 256($a3)
+sw $a2, 272($a3)
+sw $a2, 264($a3)
+
+sw $a2, 384($a3)
+sw $a2, 400($a3)
+sw $a2, 392($a3)
+
+sw $a2, 516($a3)
+sw $a2, 524($a3)
+# jumping out of function 
+lw $ra, 0($sp)            # popping value of $ra out of stack 
+addi $sp, $sp, 4          # move pointer
+jr $ra                    # exit out of function
+
+DrawEx:
+addi $sp, $sp, -4         # moving pointer
+sw $ra, 0($sp)            # pushing value of $ra into stack
+# draws !  with the top left corner at $a3
+# PARAMETER: $a3 is the address in the display where the top left of the letter will sit
+# PARAMETER: $a2 is the colour of the letter to display
+sw $a2, 0($a3)
+
+sw $a2, 128($a3)
+
+sw $a2, 256($a3)
+
+sw $a2, 512($a3)
+# jumping out of function 
+lw $ra, 0($sp)            # popping value of $ra out of stack 
+addi $sp, $sp, 4          # move pointer
+jr $ra                    # exit out of function
+
+DrawU:
+addi $sp, $sp, -4         # moving pointer
+sw $ra, 0($sp)            # pushing value of $ra into stack
+# draws with the top left corner at $a3
+# PARAMETER: $a3 is the address in the display where the top left of the letter will sit
+# PARAMETER: $a2 is the colour of the letter to display
+sw $a2, 0($a3)
+sw $a2, 8($a3)
+
+sw $a2, 128($a3)
+sw $a2, 136($a3)
+
+sw $a2, 256($a3)
+sw $a2, 264($a3)
+
+sw $a2, 384($a3)
+sw $a2, 392($a3)
+
+sw $a2, 512($a3)
+sw $a2, 516($a3)
+sw $a2, 520($a3)
+# jumping out of function 
+lw $ra, 0($sp)            # popping value of $ra out of stack 
+addi $sp, $sp, 4          # move pointer
+jr $ra                    # exit out of function
+
+
+
 Exit:
 li $v0, 10   # terminate the program gracefully
 syscall
-
