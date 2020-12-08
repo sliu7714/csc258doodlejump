@@ -25,7 +25,8 @@
 #
 # Any additional information that the TA needs to know:
 # - Please only input lowercase letters for the commands
-# - name can be up to 5 characters, press .(period character) to finish writing name
+# - name can be up to 5 characters
+# - press .(period character) to finish writing name less than 5 characters
 # - To start press s, the score is in the top right
 # - After every 5 score points WOW! drawn
 # - After every 10 points SUPER! is drawn in rainbow
@@ -80,12 +81,52 @@ addi $t3, $zero, -380
 sw $t3, 24($t9)                # head -- 3 rows up (-384), 1 right (+$)
 
 InputName:
-#TODO: INPUT NAME MESSAGE--------------------------- HERE 1
+#INPUT NAME MESSAGE--------------------------
+jal StartDrawSky                     # fill background
+lw $t0, displayAddress          # $t0 stores the base address for display
+addi $a3, $t0, 240              # $a3 parameter for drawing number -- location
+lw $a2, skyColour               # $a2 parameter for drawing number -- colour
+jal Draw0
+lw $a2, orangeColour            # $a2 parameter for drawing letter - colour of the letters 
+# $a3 parameter for drawing letter - location of top left square
+#PLEASE
+addi $a3, $t0, 912 
+jal DrawP
+addi $a3, $t0, 928 
+jal DrawL
+addi $a3, $t0, 940
+jal DrawE
+addi $a3, $t0, 952
+jal DrawA
+addi $a3, $t0, 968
+jal DrawS
+addi $a3, $t0, 984
+jal DrawE
+#INPUT
+addi $a3, $t0, 1684
+jal DrawI
+addi $a3, $t0,  1692
+jal DrawN
+addi $a3, $t0,  1712
+jal DrawP
+addi $a3, $t0,  1728
+jal DrawU
+addi $a3, $t0, 1744  
+jal DrawT
+#NAME
+addi $a3, $t0,  2452
+jal DrawN
+addi $a3, $t0,  2472
+jal DrawA
+addi $a3, $t0,  2488
+jal DrawM
+addi $a3, $t0,  2512
+jal DrawE
+# END INPUT NAME MESSAG-----------------------------------------
+
 # Allowing player to input name up to 5 characters in Lowercase
 # pressing . (period) moves on to screen to say hello to player
-lw $t0, displayAddress          # $t0 stores the base address for display
-lw $t7, orangeColour   #TEST     
-sw $t7, 0($t0)# TEST
+
 la $t5, playerName              # $t5 stores the address of the letter of the name
 addi $t6, $t5, 20               # max 5 chars x 4 = 20
 InputNameLoop:
@@ -93,10 +134,6 @@ beq $t5, $t6, WelcomeScreen     # end the loop after 5 characters
 # check for keyboard input
 lw $t4, 0xffff0000              # $t5 will be 1 if there is keyboard input
 beq $t4, 1, CheckNameInput      # keyboard input detected
-# sleeps for.25 sec
-li $v0, 32                      # command for sleep
-li $a0, 250                     # sleep for specified millisecconds
-syscall
 j InputNameLoop                 # jump back to beginning of loop
 
 CheckNameInput:
@@ -129,8 +166,8 @@ beq $t8, 0x69, NameI
 beq $t8, 0x6A, NameJ
 beq $t8, 0x6B, NameK
 beq $t8, 0x6C, NameL
-beq $t8, 0x6E, NameM
-beq $t8, 0x6D, NameN
+beq $t8, 0x6E, NameN
+beq $t8, 0x6D, NameM
 beq $t8, 0x6F, NameO
 beq $t8, 0x70, NameP
 beq $t8, 0x71, NameQ
@@ -233,7 +270,7 @@ WelcomeScreen:
 jal StartDrawSky 
 lw $t0, displayAddress          # $t0 stores the base address for display
 
-#TODO draw player name
+# draw player name
 la $t5, playerName              # $t5 stores the address of the letter of the name
 addi $t6, $t5, 20               # max 5 chars x 4 = 20
 addi $a3, $t0, 1032             # parameter for draw letter: location of letter - increased in helper
@@ -643,7 +680,6 @@ BackToDropDownLoop:
 addi $a0, $s2, 0             # sleep for specified millisecconds in $a0
 #li $a0, 25 #TEST
 syscall                       # sleeps 
-# HERE )____________________________________________________________________________________________________________
 jal EraseDoodler              # erase the previous position of doodler
 lw $t4, 0xffff0000            # $t5 will be 1 if there is keyboard input
 beq $t4, 1, CheckKeyboardInput# keyboard input detected
@@ -1940,15 +1976,14 @@ sw $a2, 140($a3)
 
 sw $a2, 256($a3)
 sw $a2, 260($a3)
-sw $a2, 264($a3)
+sw $a2, 268($a3)
 
 sw $a2, 384($a3)
-sw $a2, 388($a3)
+sw $a2, 396($a3)
 sw $a2, 392($a3)
 
 sw $a2, 512($a3)
-sw $a2, 516($a3)
-sw $a2, 520($a3)
+sw $a2, 524($a3)
 # jumping out of function 
 lw $ra, 0($sp)            # popping value of $ra out of stack 
 addi $sp, $sp, 4          # move pointer
